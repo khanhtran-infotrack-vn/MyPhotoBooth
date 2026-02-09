@@ -96,6 +96,8 @@ public class AlbumsController : ControllerBase
             {
                 Id = ap.Photo.Id,
                 OriginalFileName = ap.Photo.OriginalFileName,
+                Width = ap.Photo.Width,
+                Height = ap.Photo.Height,
                 CapturedAt = ap.Photo.CapturedAt,
                 UploadedAt = ap.Photo.UploadedAt,
                 ThumbnailPath = ap.Photo.ThumbnailPath

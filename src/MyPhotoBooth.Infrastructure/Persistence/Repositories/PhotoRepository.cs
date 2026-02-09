@@ -33,6 +33,13 @@ public class PhotoRepository : IPhotoRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<int> GetCountByUserIdAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Photos
+            .Where(p => p.UserId == userId)
+            .CountAsync(cancellationToken);
+    }
+
     public async Task<IEnumerable<Photo>> GetTimelineAsync(string userId, DateTime? fromDate = null, DateTime? toDate = null, int skip = 0, int take = 50, CancellationToken cancellationToken = default)
     {
         var query = _context.Photos.Where(p => p.UserId == userId);
@@ -48,6 +55,19 @@ public class PhotoRepository : IPhotoRepository
             .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> GetTimelineCountAsync(string userId, DateTime? fromDate = null, DateTime? toDate = null, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Photos.Where(p => p.UserId == userId);
+
+        if (fromDate.HasValue)
+            query = query.Where(p => p.CapturedAt >= fromDate.Value);
+
+        if (toDate.HasValue)
+            query = query.Where(p => p.CapturedAt <= toDate.Value);
+
+        return await query.CountAsync(cancellationToken);
     }
 
     public async Task<Photo> AddAsync(Photo photo, CancellationToken cancellationToken = default)

@@ -31,6 +31,8 @@ public class PhotoListResponse
 {
     public Guid Id { get; set; }
     public string OriginalFileName { get; set; } = string.Empty;
+    public int Width { get; set; }
+    public int Height { get; set; }
     public DateTime? CapturedAt { get; set; }
     public DateTime UploadedAt { get; set; }
     public string ThumbnailPath { get; set; } = string.Empty;

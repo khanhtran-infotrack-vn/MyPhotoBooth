@@ -9,6 +9,8 @@ public class Photo
     public string ThumbnailPath { get; set; } = string.Empty;
     public long FileSize { get; set; }
     public string ContentType { get; set; } = string.Empty;
+    public int Width { get; set; }
+    public int Height { get; set; }
     public DateTime? CapturedAt { get; set; }
     public DateTime UploadedAt { get; set; }
     public string? Description { get; set; }

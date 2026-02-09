@@ -1,9 +1,14 @@
 import { create } from 'zustand';
 import api from '../lib/api';
 
+interface User {
+  email: string;
+  displayName?: string;
+}
+
 interface AuthState {
   isAuthenticated: boolean;
-  user: { email: string } | null;
+  user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, confirmPassword: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -18,7 +23,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { data } = await api.post('/auth/login', { email, password });
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
-    set({ isAuthenticated: true, user: { email } });
+    set({ isAuthenticated: true, user: { email, displayName: data.displayName } });
   },
 
   register: async (email: string, password: string, confirmPassword: string, displayName: string) => {

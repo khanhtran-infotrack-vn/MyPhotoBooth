@@ -98,6 +98,8 @@ public class PhotosController : ControllerBase
             ThumbnailPath = thumbnailPath,
             FileSize = file.Length,
             ContentType = "image/jpeg",
+            Width = processed.Width,
+            Height = processed.Height,
             CapturedAt = capturedAt,
             UploadedAt = DateTime.UtcNow,
             Description = description,
@@ -126,23 +128,26 @@ public class PhotosController : ControllerBase
         var skip = (page - 1) * pageSize;
 
         var photos = await _photoRepository.GetByUserIdAsync(userId, skip, pageSize, cancellationToken);
+        var totalCount = await _photoRepository.GetCountByUserIdAsync(userId, cancellationToken);
+
         var photoList = photos.Select(p => new PhotoListResponse
         {
             Id = p.Id,
             OriginalFileName = p.OriginalFileName,
+            Width = p.Width,
+            Height = p.Height,
             CapturedAt = p.CapturedAt,
             UploadedAt = p.UploadedAt,
             ThumbnailPath = p.ThumbnailPath
         }).ToList();
 
-        // Note: Total count calculation omitted for brevity - would need separate repo method
         return Ok(new PaginatedResponse<PhotoListResponse>
         {
             Items = photoList,
             Page = page,
             PageSize = pageSize,
-            TotalCount = photoList.Count,
-            TotalPages = 1
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
         });
     }
 
@@ -166,8 +171,8 @@ public class PhotosController : ControllerBase
             Id = photo.Id,
             OriginalFileName = photo.OriginalFileName,
             FileSize = photo.FileSize,
-            Width = 0, // Would need to store or recalculate
-            Height = 0,
+            Width = photo.Width,
+            Height = photo.Height,
             CapturedAt = photo.CapturedAt,
             UploadedAt = photo.UploadedAt,
             Description = photo.Description,
@@ -291,10 +296,14 @@ public class PhotosController : ControllerBase
         }
 
         var photos = await _photoRepository.GetTimelineAsync(userId, fromDate, toDate, skip, pageSize, cancellationToken);
+        var totalCount = await _photoRepository.GetTimelineCountAsync(userId, fromDate, toDate, cancellationToken);
+
         var photoList = photos.Select(p => new PhotoListResponse
         {
             Id = p.Id,
             OriginalFileName = p.OriginalFileName,
+            Width = p.Width,
+            Height = p.Height,
             CapturedAt = p.CapturedAt,
             UploadedAt = p.UploadedAt,
             ThumbnailPath = p.ThumbnailPath
@@ -305,8 +314,8 @@ public class PhotosController : ControllerBase
             Items = photoList,
             Page = page,
             PageSize = pageSize,
-            TotalCount = photoList.Count,
-            TotalPages = 1
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
         });
     }
 }
