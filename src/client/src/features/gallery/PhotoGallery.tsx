@@ -51,34 +51,30 @@ export default function PhotoGallery() {
 
  return (
   <div className="min-h-screen">
-   {/* Hero Header with Gradient Background */}
-   <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-purple-700">
-    {/* Animated background elements */}
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-     <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-white/10 to-transparent rounded-full blur-3xl animate-pulse" />
-     <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-primary-400/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-    </div>
-
+   {/* Minimal Accent Hero Header */}
+   <div className="relative bg-white border-b border-gray-200">
     {/* Header Content */}
-    <div className="relative max-w-[1800px] mx-auto px-6 py-12 sm:py-16">
-     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+    <div className="max-w-[1800px] mx-auto px-6 py-10 sm:py-12 lg:py-14">
+     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
       {/* Title Section */}
-      <div className="animate-fade-in-up">
-       <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+      <div className="flex-1">
+       <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-2 tracking-tight">
         Photos
        </h1>
+       {/* Gradient accent line below title */}
+       <div className="h-0.5 w-16 bg-gradient-to-r from-primary-600 to-purple-600 rounded-full mb-3" />
        {totalCount > 0 && (
-        <p className="text-white/80 text-lg">
-         {totalCount.toLocaleString()} {totalCount === 1 ? 'photo' : 'photos'}
+        <p className="text-gray-500 text-sm sm:text-base">
+         {totalCount.toLocaleString()} {totalCount === 1 ? 'memory' : 'memories'} captured
         </p>
        )}
       </div>
 
       {/* Search Bar */}
-      <div className="w-full sm:w-80 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-       <div className="relative group">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-         <svg className="w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="w-full sm:w-72 lg:w-80">
+       <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+         <svg className="w-4.5 h-4.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
          </svg>
         </div>
@@ -87,14 +83,14 @@ export default function PhotoGallery() {
          value={searchQuery}
          onChange={(e) => setSearchQuery(e.target.value)}
          placeholder="Search photos..."
-         className="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:bg-white/20 transition-all"
+         className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200 shadow-sm"
         />
         {searchQuery && (
          <button
           onClick={() => setSearchQuery('')}
-          className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/60 hover:text-white transition-colors"
+          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
          >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
          </button>
@@ -104,25 +100,35 @@ export default function PhotoGallery() {
      </div>
 
      {/* Filter Pills */}
-     <div className="flex flex-wrap gap-2 mt-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-      <button className="px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white text-sm font-medium hover:bg-white/30 transition-colors">
+     <div className="flex flex-wrap gap-2 mt-6">
+      <button className="hero-filter-pill-minimal hero-filter-pill-minimal-active">
+       <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+       </svg>
        All Photos
       </button>
-      <button className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md text-white/80 text-sm font-medium hover:bg-white/20 transition-colors">
+      <button className="hero-filter-pill-minimal">
+       <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+       </svg>
        Favorites
       </button>
-      <button className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md text-white/80 text-sm font-medium hover:bg-white/20 transition-colors">
+      <button className="hero-filter-pill-minimal">
+       <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+       </svg>
        Recently Added
       </button>
      </div>
     </div>
 
-    {/* Bottom fade */}
-    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-50 to-transparent" />
+    {/* Bottom fade transition */}
+    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none" />
    </div>
 
    {/* Main Content */}
-   <div className="max-w-[1800px] mx-auto px-6 py-8">
+   <div className="bg-gray-50">
+    <div className="max-w-[1800px] mx-auto px-6 py-8">
     {/* Loading State */}
     {isLoading && (
      <div className="flex items-center justify-center py-32">
@@ -213,6 +219,7 @@ export default function PhotoGallery() {
      onClose={() => setSharePhoto(null)}
     />
    )}
+   </div>
   </div>
  )
 }
