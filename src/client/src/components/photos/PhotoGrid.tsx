@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect, useRef } from 'react'
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { RowsPhotoAlbum } from 'react-photo-album'
 import 'react-photo-album/rows.css'
 import type { Photo } from '../../types'
@@ -24,6 +24,7 @@ export function PhotoGrid({
 }: PhotoGridProps) {
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const { isSelectionMode, selectedIds, toggleSelection } = useSelectionStore()
+  const [hoveredPhotoId, setHoveredPhotoId] = useState<string | null>(null)
 
   // Group photos by date
   const photoGroups = useMemo(() => groupPhotosByDate(photos), [photos])
@@ -61,31 +62,19 @@ export function PhotoGrid({
   )
 
   if (photos.length === 0 && !isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-32 text-gray-600 dark:text-dark-text-secondary">
-        <div className="w-28 h-28 mb-8 rounded-3xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-bg-tertiary dark:to-dark-border-default flex items-center justify-center shadow-xl dark:shadow-primary-600/10 float">
-          <svg className="w-14 h-14 text-gray-400 dark:text-dark-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-        </div>
-        <h3 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-3">No photos yet</h3>
-        <p className="text-gray-600 dark:text-dark-text-secondary text-lg">Upload your first photos to get started</p>
-      </div>
-    )
+    return null // Empty state is handled in parent
   }
 
   return (
-    <div className="space-y-6">
-      {photoGroups.map((group) => (
-        <div key={group.date}>
+    <div className="space-y-8">
+      {photoGroups.map((group, groupIndex) => (
+        <div key={group.date} className="animate-fade-in-up" style={{ animationDelay: `${groupIndex * 0.05}s` }}>
           <DateGroupHeader
             date={group.date}
             photoCount={group.photos.length}
             photoIds={group.photos.map((p) => p.id)}
           />
-          <div className="mt-2">
+          <div className="mt-3">
             <RowsPhotoAlbum
               photos={group.photos.map((photo, idx) => ({
                 src: getThumbnailUrl(photo.id),
@@ -95,9 +84,9 @@ export function PhotoGrid({
                 originalPhoto: photo,
                 originalIndex: idx,
               }))}
-              targetRowHeight={150}
-              rowConstraints={{ minPhotos: 1, maxPhotos: 5, singleRowMaxHeight: 200 }}
-              spacing={6}
+              targetRowHeight={180}
+              rowConstraints={{ minPhotos: 1, maxPhotos: 6, singleRowMaxHeight: 240 }}
+              spacing={8}
               onClick={({ photo }) => {
                 const orig = (photo as any).originalPhoto as Photo
                 const idx = (photo as any).originalIndex as number
@@ -110,11 +99,14 @@ export function PhotoGrid({
               render={{
                 image: (props, { photo }) => {
                   const originalPhoto = (photo as any).originalPhoto as Photo
+                  const isHovered = hoveredPhotoId === originalPhoto?.id
                   return (
                     <AuthenticatedImage
                       src={photo.src}
                       alt={originalPhoto?.originalFileName || 'Photo'}
-                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      className={`w-full h-full object-cover transition-all duration-300 ${
+                        isHovered ? 'scale-105' : 'scale-100'
+                      }`}
                       style={props.style}
                       loading="lazy"
                     />
@@ -123,24 +115,33 @@ export function PhotoGrid({
                 wrapper: ({ children, style }, { photo }) => {
                   const originalPhoto = (photo as any).originalPhoto as Photo
                   const isSelected = selectedIds.has(originalPhoto?.id || '')
+                  const isHovered = hoveredPhotoId === originalPhoto?.id
+
                   return (
                     <div
-                      className={`relative group cursor-pointer overflow-hidden rounded-lg ${
-                        isSelected ? 'ring-4 ring-primary-500' : ''
+                      className={`relative group cursor-pointer overflow-hidden rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 ${
+                        isSelected ? 'ring-4 ring-primary-500 shadow-lg shadow-primary-500/20' : ''
                       }`}
                       style={style}
+                      onMouseEnter={() => setHoveredPhotoId(originalPhoto?.id || null)}
+                      onMouseLeave={() => setHoveredPhotoId(null)}
                     >
                       {children}
-                      {/* Hover overlay */}
-                      <div
-                        className={`absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none ${
-                          isSelected ? 'bg-primary-500/20' : ''
-                        }`}
-                      />
+
+                      {/* Gradient overlay on hover */}
+                      <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
+                        isHovered ? 'opacity-100' : 'opacity-0'
+                      }`} />
+
+                      {/* Selection tint */}
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-primary-500/20 backdrop-blur-[1px]" />
+                      )}
+
                       {/* Selection checkbox */}
                       <div
-                        className={`absolute top-2 left-2 transition-opacity pointer-events-auto ${
-                          isSelectionMode || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        className={`absolute top-3 left-3 transition-all duration-200 z-10 ${
+                          isSelectionMode || isSelected ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100'
                         }`}
                       >
                         <button
@@ -148,19 +149,37 @@ export function PhotoGrid({
                             e.stopPropagation()
                             if (originalPhoto) toggleSelection(originalPhoto.id)
                           }}
-                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-md ${
                             isSelected
                               ? 'bg-primary-600 border-primary-600 text-white'
-                              : 'bg-white/90 border-gray-400 hover:border-primary-600'
+                              : 'bg-white/80 dark:bg-dark-bg-secondary/80 border-gray-300 dark:border-dark-border-default hover:border-primary-500'
                           }`}
                         >
                           {isSelected && (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4 animate-scale-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
                           )}
                         </button>
                       </div>
+
+                      {/* Photo info overlay on hover */}
+                      <div className={`absolute bottom-0 left-0 right-0 p-3 text-white transition-all duration-300 ${
+                        isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+                      }`}>
+                        <p className="text-sm font-medium truncate drop-shadow-lg">
+                          {originalPhoto?.originalFileName}
+                        </p>
+                      </div>
+
+                      {/* Shine effect on hover */}
+                      <div className={`absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 transition-opacity duration-300 pointer-events-none ${
+                        isHovered ? 'opacity-100' : 'opacity-0'
+                      }`} style={{
+                        background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.2) 50%, transparent 55%)',
+                        backgroundSize: '200% 100%',
+                        backgroundPosition: isHovered ? '100% 0' : '-100% 0',
+                      }} />
                     </div>
                   )
                 },
@@ -174,15 +193,32 @@ export function PhotoGrid({
       {hasMore && (
         <div ref={loadMoreRef} className="flex justify-center py-12">
           {isLoading ? (
-            <div className="flex items-center gap-3 text-gray-600 dark:text-dark-text-secondary">
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin" />
-              <span className="font-medium">Loading more photos...</span>
+            <div className="flex flex-col items-center gap-4 px-6 py-4 rounded-2xl bg-gray-100 dark:bg-dark-bg-secondary/50 backdrop-blur-sm">
+              <div className="relative">
+                <div className="w-6 h-6 border-2 border-gray-300 border-t-primary-600 dark:border-t-primary-500 rounded-full animate-spin" />
+              </div>
+              <span className="text-sm font-medium text-gray-600 dark:text-dark-text-secondary">Loading more photos...</span>
             </div>
           ) : (
-            <button onClick={onLoadMore} className="btn-secondary">
-              Load more
+            <button
+              onClick={onLoadMore}
+              className="group px-6 py-3 rounded-full bg-white dark:bg-dark-bg-secondary border border-gray-200 dark:border-dark-border-default shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
+            >
+              <span className="text-sm font-semibold text-gray-700 dark:text-dark-text-primary group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                Load more photos
+              </span>
             </button>
           )}
+        </div>
+      )}
+
+      {/* End of photos indicator */}
+      {!hasMore && photos.length > 0 && (
+        <div className="flex justify-center py-8">
+          <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-gray-100 dark:bg-dark-bg-secondary/30">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="text-sm text-gray-500 dark:text-dark-text-secondary">You've reached the end</span>
+          </div>
         </div>
       )}
     </div>
