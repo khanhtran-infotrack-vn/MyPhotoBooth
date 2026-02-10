@@ -2,7 +2,8 @@
 
 **Project**: Photo memories application for storing and viewing photos with friends and family
 **Architecture**: React SPA frontend + ASP.NET Core Web API backend
-**Last Updated**: 2026-02-09
+**Version**: 1.1.0
+**Last Updated**: 2026-02-10
 
 ---
 
@@ -49,28 +50,31 @@
 ### Route Structure
 ```
 /login              # Public route
-/signup             # Public route
+/register           # Public route (signup)
+/shared/:token      # Public route - shared content view
 /                   # Protected routes wrapper
-  /gallery          # Main photo grid
-  /albums/:id       # Album view
-  /timeline         # Timeline view
-  /upload           # Upload interface
+  /photos           # Main photo grid (gallery)
+  /albums           # Album list
+  /albums/:id       # Album detail view
+  /tags             # Tags list
+  /shares           # Share link management
+  /timeline         # Timeline view (future)
 ```
 
 ### Project Structure
 ```
 src/
 ├── features/
-│   ├── auth/           # Login, signup, useAuth hook
-│   ├── gallery/        # Photo grid, virtualized list
-│   ├── albums/         # Album views and management
-│   ├── upload/         # Chunked upload with progress
+│   ├── auth/           # Login, register, useAuth hook
+│   ├── gallery/        # Photo grid (PhotoGallery)
+│   ├── albums/         # Album list and detail views
+│   ├── sharing/        # Share modals, management, public view
 │   └── lightbox/       # Photo viewer component
-├── components/         # Shared UI components
+├── components/
+│   └── layout/         # AppShell, Sidebar, Header
 ├── lib/                # TanStack Query setup, axios config
-├── stores/             # Zustand stores
-├── hooks/              # Custom React hooks
-└── utils/              # Helper functions
+├── hooks/              # Custom React hooks (usePhotos, useAlbums, useShareLinks, etc.)
+└── types/              # TypeScript type definitions
 ```
 
 ---
@@ -117,7 +121,8 @@ Album       # Name, description, cover photo
 Tag         # Name, category
 User        # ASP.NET Identity tables
 PhotoTag    # Many-to-many relationship
-AlbumPhoto  # Many-to-many relationship
+AlbumPhoto  # Many-to-many relationship with sort order
+ShareLink   # Token-based public sharing with password/expiration (v1.1.0)
 ```
 
 **PostgreSQL-Specific Features**:
@@ -165,14 +170,25 @@ GET    /api/photos?page=1&pageSize=50       # List photos (paginated)
 GET    /api/photos/{id}                     # Get photo details
 PUT    /api/photos/{id}                     # Update metadata
 DELETE /api/photos/{id}                     # Delete photo
-GET    /api/photos/{id}/download            # Download original
+GET    /api/photos/{id}/file                # Download original
+GET    /api/photos/{id}/thumbnail           # Get thumbnail
 
 POST   /api/albums                          # Create album
 GET    /api/albums                          # List user's albums
-POST   /api/albums/{id}/photos              # Add photos to album
+POST   /api/albums/{id}/photos/{photoId}    # Add photo to album
+DELETE /api/albums/{id}/photos/{photoId}    # Remove photo from album
 
 GET    /api/timeline?year=2026&month=2      # Timeline view
 GET    /api/tags                            # List all tags
+
+POST   /api/sharelinks                      # Create share link (photo or album)
+GET    /api/sharelinks                      # List user's share links
+DELETE /api/sharelinks/{id}                 # Revoke share link
+
+GET    /api/shared/{token}                  # Get share metadata (public)
+POST   /api/shared/{token}/access           # Access shared content with password (public)
+GET    /api/shared/{token}/photos/{id}/file # Download shared photo (public)
+GET    /api/shared/{token}/photos/{id}/thumbnail # Get shared thumbnail (public)
 ```
 
 ### Project Structure
@@ -307,15 +323,28 @@ SixLabors.ImageSharp
 
 ---
 
-## Next Steps
+## Implemented Features (v1.1.0)
 
-1. Initialize Vite + React project with TypeScript
-2. Set up ASP.NET Core solution with Clean Architecture structure
-3. Configure PostgreSQL connection and create initial migrations
-4. Implement authentication (ASP.NET Identity + JWT)
-5. Build photo upload endpoint with streaming and validation
-6. Create image processing pipeline with thumbnails
-7. Develop gallery components with virtualization
-8. Implement album and tag management
-9. Add timeline view with chronological grouping
-10. Optimize performance (lazy loading, caching, CDN)
+1. ✅ Vite + React project with TypeScript
+2. ✅ ASP.NET Core solution with Clean Architecture structure
+3. ✅ PostgreSQL connection with EF Core migrations
+4. ✅ Authentication (ASP.NET Identity + JWT with refresh tokens)
+5. ✅ Photo upload endpoint with streaming and validation
+6. ✅ Image processing pipeline with thumbnails and EXIF extraction
+7. ✅ Gallery components with grid layout
+8. ✅ Album and tag management (CRUD operations)
+9. ✅ Public sharing with token-based links (password protection, expiration, download control)
+10. ✅ Performance optimizations (lazy loading, caching, blob URLs)
+
+## Future Enhancements
+
+1. Timeline view with chronological grouping
+2. Advanced search and filtering
+3. Face recognition and auto-tagging
+4. Cloud storage integration (AWS S3, Azure Blob)
+5. Multi-user collaboration on albums
+6. Photo editing capabilities
+7. Mobile app (React Native)
+8. Social sharing integrations
+9. Advanced analytics and insights
+10. AI-powered photo organization

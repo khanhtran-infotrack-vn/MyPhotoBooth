@@ -10,9 +10,10 @@ interface LightboxProps {
   photos: Photo[]
   initialIndex: number
   onClose: () => void
+  onShare?: (photo: Photo) => void
 }
 
-export function Lightbox({ photos, initialIndex, onClose }: LightboxProps) {
+export function Lightbox({ photos, initialIndex, onClose, onShare }: LightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -151,6 +152,7 @@ export function Lightbox({ photos, initialIndex, onClose }: LightboxProps) {
           onClose={onClose}
           onToggleInfo={() => setShowInfo((s) => !s)}
           showInfo={showInfo}
+          onShare={onShare ? () => onShare(currentPhoto) : undefined}
         />
       </div>
 

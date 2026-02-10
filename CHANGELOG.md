@@ -5,6 +5,61 @@ All notable changes to MyPhotoBooth will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-10
+
+### Added - Public Sharing Feature
+- 🔗 **Share photos and albums via public links**
+  - Token-based secure sharing (cryptographically random 32-byte tokens)
+  - Password protection for sensitive shares
+  - Expiration date configuration
+  - Download control (enable/disable per share)
+  - Link revocation with instant effect
+  - Share link management UI
+
+- **Backend Implementation**:
+  - New `ShareLink` entity with comprehensive validation
+  - `ShareLinksController` for authenticated share management
+  - `SharedController` for public unauthenticated access
+  - Password hashing using ASP.NET Identity PasswordHasher
+  - Token generation with RandomNumberGenerator
+  - Database migration: `20260210021155_AddShareLinks`
+
+- **Frontend Implementation**:
+  - `ShareModal` component for creating share links
+  - `ShareManagement` page for managing active shares
+  - `SharedView` public page for viewing shared content
+  - `SharedPhotoGrid` and `SharedLightbox` for shared albums
+  - New hooks: `useShareLinks` and `useSharedContent`
+  - Public API client (`publicApi`) for unauthenticated requests
+
+- **API Endpoints**:
+  - `POST /api/sharelinks` - Create share link (authenticated)
+  - `GET /api/sharelinks` - List user's share links (authenticated)
+  - `DELETE /api/sharelinks/{id}` - Revoke share link (authenticated)
+  - `GET /api/shared/{token}` - Get share metadata (public)
+  - `POST /api/shared/{token}/access` - Access shared content with password (public)
+  - `GET /api/shared/{token}/photos/{id}/file` - Download shared photo (public)
+  - `GET /api/shared/{token}/photos/{id}/thumbnail` - Get shared thumbnail (public)
+
+- **Routes**:
+  - `/shares` - Share link management (protected)
+  - `/shared/{token}` - Public shared content view
+
+### Changed
+- Updated `AppDbContext` to include ShareLinks entity configuration with computed properties ignored
+- Added `IShareLinkRepository` registration in DependencyInjection
+- Enhanced PhotoGallery and AlbumDetail with share functionality
+- Added "Shares" navigation item to Sidebar
+- Updated Lightbox with share action button
+
+### Security
+- Cryptographically secure token generation (base64url encoded)
+- Password hashing with industry-standard algorithm
+- Token validation on every request
+- Expiration and revocation enforcement
+- Download control per share link
+- No authentication required for public endpoints (by design)
+
 ## [1.0.0] - 2026-02-09
 
 ### Added
@@ -47,7 +102,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned Features
 - Cloud storage integration (AWS S3, Azure Blob)
-- Photo sharing with other users
 - Face detection and recognition
 - Advanced search and filtering
 - Bulk photo operations
@@ -56,7 +110,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Social features (comments, likes)
 - Export albums to PDF/ZIP
 - Automated photo organization
+- Multi-user collaboration on albums
 
 ---
 
+[1.1.0]: https://github.com/yourusername/myphotobooth/releases/tag/v1.1.0
 [1.0.0]: https://github.com/yourusername/myphotobooth/releases/tag/v1.0.0

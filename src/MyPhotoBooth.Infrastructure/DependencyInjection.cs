@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IPhotoRepository, PhotoRepository>();
         services.AddScoped<IAlbumRepository, AlbumRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
+        services.AddScoped<IShareLinkRepository, ShareLinkRepository>();
 
         // Auth Services
         services.AddScoped<ITokenService, TokenService>();

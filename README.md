@@ -2,7 +2,7 @@
 
 A modern photo memories application for storing and viewing photos with friends and family. Built with React and ASP.NET Core.
 
-![MyPhotoBooth](https://img.shields.io/badge/Version-1.0.0-blue)
+![MyPhotoBooth](https://img.shields.io/badge/Version-1.1.0-blue)
 ![React](https://img.shields.io/badge/React-18-61dafb)
 ![.NET](https://img.shields.io/badge/.NET-10.0-512bd4)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
@@ -14,6 +14,7 @@ A modern photo memories application for storing and viewing photos with friends 
 - 🖼️ **Smart Image Processing** - Auto-rotation, EXIF extraction, thumbnail generation
 - 📁 **Albums & Tags** - Organize photos into albums and tag them
 - 📅 **Timeline View** - Browse photos by date
+- 🔗 **Public Sharing** - Share photos and albums via secure public links
 - 🎨 **Modern UI** - Beautiful, responsive design with smooth animations
 - 🚀 **High Performance** - Optimized image loading with blob URLs
 - 📱 **Responsive** - Works on desktop, tablet, and mobile
@@ -177,6 +178,17 @@ The application seeds two roles on startup:
 - `PUT /api/tags/{id}` - Update tag
 - `DELETE /api/tags/{id}` - Delete tag
 
+**Share Links:**
+- `POST /api/sharelinks` - Create share link (photo or album)
+- `GET /api/sharelinks` - List user's share links
+- `DELETE /api/sharelinks/{id}` - Revoke share link
+
+**Public Shared Content:**
+- `GET /api/shared/{token}` - Get shared content (public, no auth)
+- `POST /api/shared/{token}/verify` - Verify password for protected shares
+- `GET /api/shared/{token}/photos/{id}/file` - Download shared photo
+- `GET /api/shared/{token}/photos/{id}/thumbnail` - Get shared thumbnail
+
 ## 🔒 Security
 
 - **JWT Authentication** - Secure token-based authentication
@@ -205,6 +217,16 @@ The application seeds two roles on startup:
 - Local file system storage
 - Organized structure: `photos/{userId}/{year}/{month}/`
 - Configurable storage path and file size limits
+
+### Public Sharing
+
+Share photos and albums with anyone via secure public links:
+- **Token-based access** - Cryptographically secure random tokens
+- **Password protection** - Optional password requirement for sensitive content
+- **Expiration dates** - Set links to auto-expire
+- **Download control** - Enable/disable downloads for shared content
+- **Revocation** - Instantly revoke access to shared links
+- **Management** - View and manage all active share links
 
 ### Authentication Flow
 

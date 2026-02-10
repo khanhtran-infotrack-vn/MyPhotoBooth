@@ -7,6 +7,8 @@ import { AppShell } from './components/layout'
 import PhotoGallery from './features/gallery/PhotoGallery'
 import { AlbumList, AlbumDetail } from './features/albums'
 import { TagList, TagPhotos } from './features/tags'
+import ShareManagement from './features/sharing/ShareManagement'
+import { SharedView } from './features/sharing/SharedView'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +26,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/shared/:token" element={<SharedView />} />
           <Route
             element={
               <ProtectedRoute>
@@ -37,6 +40,7 @@ function App() {
             <Route path="albums/:id" element={<AlbumDetail />} />
             <Route path="tags" element={<TagList />} />
             <Route path="tags/:id" element={<TagPhotos />} />
+            <Route path="shares" element={<ShareManagement />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

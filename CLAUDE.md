@@ -8,9 +8,9 @@ MyPhotoBooth is a full-stack photo memories application for storing, organizing,
 
 ## Project Status
 
-**Status**: ✅ Production Ready (v1.0.0)
+**Status**: ✅ Production Ready (v1.1.0)
 
-All core features implemented and tested. Ready for deployment.
+All core features implemented and tested, including public sharing (v1.1.0). Ready for deployment.
 
 ## Architecture
 
@@ -99,7 +99,8 @@ docker-compose -f docker-compose.prod.yml up -d
 5. **Albums** - Organize photos into collections
 6. **Tags** - Tag photos for easy searching
 7. **Timeline** - Browse photos by date
-8. **Modern UI** - Gradient design with smooth animations
+8. **Public Sharing** - Share photos/albums via secure token-based links
+9. **Modern UI** - Gradient design with smooth animations
 
 ## Project Structure
 
@@ -111,12 +112,19 @@ docker-compose -f docker-compose.prod.yml up -d
 - `GET /api/photos/timeline` - Timeline view
 - `CRUD /api/albums` - Album management
 - `CRUD /api/tags` - Tag management
+- `GET|POST|DELETE /api/sharelinks` - Share link management
+- `GET /api/shared/{token}` - Public shared content access
 
 ### Frontend Routes
 
 - `/login` - Login page
 - `/register` - Registration page
-- `/` - Photo gallery (protected)
+- `/` or `/photos` - Photo gallery (protected)
+- `/albums` - Album list (protected)
+- `/albums/{id}` - Album detail (protected)
+- `/tags` - Tags list (protected)
+- `/shares` - Share links management (protected)
+- `/shared/{token}` - Public shared content view (public)
 
 ### Database Schema
 
@@ -130,6 +138,7 @@ docker-compose -f docker-compose.prod.yml up -d
 - Tags (photo tags)
 - PhotoTags (many-to-many)
 - AlbumPhotos (many-to-many with sort order)
+- ShareLinks (public sharing tokens)
 
 ## Configuration Files
 
@@ -196,6 +205,17 @@ None currently. All core features are complete and working.
 
 ## Recent Changes
 
+### v1.1.0 - Public Sharing Feature
+- ✅ Token-based public link sharing for photos and albums
+- ✅ Password protection for sensitive shares
+- ✅ Expiration date configuration
+- ✅ Download control (enable/disable)
+- ✅ Share link revocation
+- ✅ ShareManagement UI for managing active shares
+- ✅ Public SharedView for viewing shared content without authentication
+- ✅ New ShareLink entity with migration (20260210021155_AddShareLinks)
+
+### v1.0.0 - Initial Release
 - ✅ Fixed 401 error on thumbnails (use authenticated blob URLs)
 - ✅ Fixed CORS issues for registration/login
 - ✅ Redesigned UI with modern gradient theme

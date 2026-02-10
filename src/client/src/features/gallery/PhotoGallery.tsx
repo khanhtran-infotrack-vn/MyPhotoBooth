@@ -2,11 +2,13 @@ import { useState, useMemo } from 'react'
 import { PhotoGrid, SelectionBar } from '../../components/photos'
 import { Lightbox } from '../../components/lightbox'
 import { usePhotos, getAllPhotosFromPages } from '../../hooks/usePhotos'
+import { ShareModal } from '../sharing/ShareModal'
 import type { Photo } from '../../types'
 
 export default function PhotoGallery() {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [sharePhoto, setSharePhoto] = useState<Photo | null>(null)
 
   const {
     data,
@@ -77,6 +79,19 @@ export default function PhotoGallery() {
           photos={photos}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
+          onShare={(photo) => {
+            setSharePhoto(photo)
+          }}
+        />
+      )}
+
+      {/* Share Modal */}
+      {sharePhoto && (
+        <ShareModal
+          type="photo"
+          targetId={sharePhoto.id}
+          targetName={sharePhoto.originalFileName}
+          onClose={() => setSharePhoto(null)}
         />
       )}
     </div>

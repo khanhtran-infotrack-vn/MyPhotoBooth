@@ -17,6 +17,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PhotoTag> PhotoTags => Set<PhotoTag>();
     public DbSet<AlbumPhoto> AlbumPhotos => Set<AlbumPhoto>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ShareLink> ShareLinks => Set<ShareLink>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -109,6 +110,32 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
             // Index on token for fast lookup
             entity.HasIndex(rt => rt.Token);
+        });
+
+        // ShareLink configuration
+        builder.Entity<ShareLink>(entity =>
+        {
+            entity.HasKey(sl => sl.Id);
+            entity.Property(sl => sl.Token).IsRequired().HasMaxLength(50);
+            entity.Property(sl => sl.UserId).IsRequired();
+            entity.Property(sl => sl.PasswordHash).HasMaxLength(500);
+
+            entity.HasIndex(sl => sl.Token).IsUnique();
+            entity.HasIndex(sl => sl.UserId);
+
+            entity.HasOne(sl => sl.Photo)
+                .WithMany()
+                .HasForeignKey(sl => sl.PhotoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(sl => sl.Album)
+                .WithMany()
+                .HasForeignKey(sl => sl.AlbumId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Ignore(sl => sl.IsExpired);
+            entity.Ignore(sl => sl.IsRevoked);
+            entity.Ignore(sl => sl.IsActive);
         });
     }
 }

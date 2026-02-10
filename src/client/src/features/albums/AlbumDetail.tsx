@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAlbum, useDeleteAlbum } from '../../hooks/useAlbums'
 import { PhotoGrid } from '../../components/photos'
 import { Lightbox } from '../../components/lightbox'
+import { ShareModal } from '../sharing/ShareModal'
 import type { Photo } from '../../types'
 
 export default function AlbumDetail() {
@@ -10,6 +11,8 @@ export default function AlbumDetail() {
   const navigate = useNavigate()
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [showShareAlbum, setShowShareAlbum] = useState(false)
+  const [sharePhoto, setSharePhoto] = useState<Photo | null>(null)
 
   const { data: album, isLoading } = useAlbum(id ?? null)
   const deleteAlbum = useDeleteAlbum()
@@ -74,17 +77,30 @@ export default function AlbumDetail() {
             </p>
           </div>
 
-          <button
-            onClick={handleDeleteAlbum}
-            className="btn-ghost text-red-600 hover:bg-red-50"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-            Delete Album
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowShareAlbum(true)}
+              className="btn-ghost text-primary-600 hover:bg-primary-50"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
+              </svg>
+              Share
+            </button>
+            <button
+              onClick={handleDeleteAlbum}
+              className="btn-ghost text-red-600 hover:bg-red-50"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              Delete Album
+            </button>
+          </div>
         </div>
       </div>
 
@@ -112,6 +128,27 @@ export default function AlbumDetail() {
           photos={photos}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
+          onShare={(photo) => setSharePhoto(photo)}
+        />
+      )}
+
+      {/* Share Album Modal */}
+      {showShareAlbum && album && (
+        <ShareModal
+          type="album"
+          targetId={album.id}
+          targetName={album.name}
+          onClose={() => setShowShareAlbum(false)}
+        />
+      )}
+
+      {/* Share Photo Modal */}
+      {sharePhoto && (
+        <ShareModal
+          type="photo"
+          targetId={sharePhoto.id}
+          targetName={sharePhoto.originalFileName}
+          onClose={() => setSharePhoto(null)}
         />
       )}
     </div>

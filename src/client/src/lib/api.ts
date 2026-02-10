@@ -48,4 +48,9 @@ api.interceptors.response.use(
   }
 );
 
+// Public API instance (no auth interceptor) for shared content
+export const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+});
+
 export default api;
