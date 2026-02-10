@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MyPhotoBooth.Application.Common.Behaviors;
+using MyPhotoBooth.Application.Common.Configuration;
 using MyPhotoBooth.Application.Interfaces;
 using MyPhotoBooth.Domain.Entities;
 using MyPhotoBooth.Infrastructure.Common.Behaviors;
@@ -51,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IAlbumRepository, AlbumRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
         services.AddScoped<IShareLinkRepository, ShareLinkRepository>();
+        services.AddScoped<IGroupRepository, GroupRepository>();
 
         // Auth Services
         services.AddScoped<ITokenService, TokenService>();
@@ -63,6 +66,10 @@ public static class DependencyInjection
         // Storage Services
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IImageProcessingService, ImageProcessingService>();
+
+        // Configuration Settings
+        services.Configure<GroupSettings>(
+            configuration.GetSection(GroupSettings.SectionName));
 
         return services;
     }

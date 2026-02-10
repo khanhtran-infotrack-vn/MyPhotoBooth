@@ -18,6 +18,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AlbumPhoto> AlbumPhotos => Set<AlbumPhoto>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ShareLink> ShareLinks => Set<ShareLink>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
+    public DbSet<GroupSharedContent> GroupSharedContents => Set<GroupSharedContent>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -136,6 +139,74 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.Ignore(sl => sl.IsExpired);
             entity.Ignore(sl => sl.IsRevoked);
             entity.Ignore(sl => sl.IsActive);
+        });
+
+        // Group configuration
+        builder.Entity<Group>(entity =>
+        {
+            entity.HasKey(g => g.Id);
+            entity.Property(g => g.Name).IsRequired().HasMaxLength(200);
+            entity.Property(g => g.Description).HasMaxLength(1000);
+            entity.Property(g => g.OwnerId).IsRequired();
+
+            entity.HasIndex(g => g.OwnerId);
+            entity.HasIndex(g => new { g.OwnerId, g.DeletedAt });
+
+            entity.Ignore(g => g.IsDeleted);
+            entity.Ignore(g => g.IsDeletionScheduled);
+            entity.Ignore(g => g.DaysUntilDeletion);
+        });
+
+        // GroupMember configuration
+        builder.Entity<GroupMember>(entity =>
+        {
+            entity.HasKey(gm => gm.Id);
+            entity.Property(gm => gm.GroupId).IsRequired();
+            entity.Property(gm => gm.UserId).IsRequired();
+
+            entity.HasIndex(gm => new { gm.GroupId, gm.UserId, gm.LeftAt });
+
+            entity.HasOne(gm => gm.Group)
+                .WithMany(g => g.Members)
+                .HasForeignKey(gm => gm.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(gm => gm.User)
+                .WithMany()
+                .HasForeignKey(gm => gm.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Ignore(gm => gm.IsActive);
+            entity.Ignore(gm => gm.IsInGracePeriod);
+        });
+
+        // GroupSharedContent configuration
+        builder.Entity<GroupSharedContent>(entity =>
+        {
+            entity.HasKey(gsc => gsc.Id);
+            entity.Property(gsc => gsc.GroupId).IsRequired();
+            entity.Property(gsc => gsc.SharedByUserId).IsRequired();
+
+            entity.HasIndex(gsc => new { gsc.GroupId, gsc.ContentType, gsc.RemovedAt });
+            entity.HasIndex(gsc => gsc.PhotoId);
+            entity.HasIndex(gsc => gsc.AlbumId);
+
+            entity.HasOne(gsc => gsc.Group)
+                .WithMany(g => g.SharedContent)
+                .HasForeignKey(gsc => gsc.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(gsc => gsc.Photo)
+                .WithMany()
+                .HasForeignKey(gsc => gsc.PhotoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(gsc => gsc.Album)
+                .WithMany()
+                .HasForeignKey(gsc => gsc.AlbumId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Ignore(gsc => gsc.IsActive);
         });
     }
 }

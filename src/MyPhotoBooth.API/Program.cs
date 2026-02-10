@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using MyPhotoBooth.Domain.Entities;
 using MyPhotoBooth.Infrastructure;
+using MyPhotoBooth.Infrastructure.BackgroundServices;
 using MyPhotoBooth.Infrastructure.Persistence;
 using Scalar.AspNetCore;
 
@@ -49,6 +50,9 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// Background Services
+builder.Services.AddHostedService<GroupCleanupBackgroundService>();
 
 // CORS Configuration
 builder.Services.AddCors(options =>

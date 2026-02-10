@@ -3,7 +3,7 @@
 /* ========================================
    MyPhotoBooth Design System
    Google Photos-inspired theme with clean,
-   modern aesthetics and full dark mode support
+   modern aesthetics
    ======================================== */
 
 @theme {
@@ -34,30 +34,6 @@
   --color-gray-700: #334155;
   --color-gray-800: #1e293b;
   --color-gray-900: #0f172a;
-
-  /* ========================================
-     Dark Mode Colors (Enhanced)
-     ======================================== */
-  /* Rich, deep backgrounds with subtle warmth */
-  --color-dark-bg-primary: #0a0e1a;   /* Deepest background - nearly black with blue tint */
-  --color-dark-bg-secondary: #121829; /* Cards, panels - slightly elevated */
-  --color-dark-bg-tertiary: #1a2236;  /* Hover states - elevated surface */
-  --color-dark-bg-elevated: #1a2236;  /* Modals, dropdowns */
-
-  /* High contrast text for readability */
-  --color-dark-text-primary: #f1f5f9;   /* Headings, primary text - slightly warm white */
-  --color-dark-text-secondary: #a8b1c7; /* Secondary text - muted blue-gray */
-  --color-dark-text-tertiary: #64748b;  /* Disabled text */
-
-  /* Subtle borders with better contrast */
-  --color-dark-border-default: #2a3447;
-  --color-dark-border-muted: #1a2236;
-  --color-dark-border-focus: #60a5fa;   /* Brighter blue for focus states */
-
-  /* Dark mode accent gradients */
-  --color-dark-gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  --color-dark-gradient-surface: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.04) 100%);
-  --color-dark-gradient-overlay: linear-gradient(180deg, rgba(10, 14, 26, 0) 0%, rgba(10, 14, 26, 0.8) 100%);
 
   /* ========================================
      Semantic Colors
@@ -167,12 +143,8 @@
     text-rendering: optimizeLegibility;
   }
 
-  html.dark {
-    color-scheme: dark;
-  }
-
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-dark-bg-primary dark:text-dark-text-primary;
+    @apply bg-gray-50 text-gray-900;
     @apply min-h-screen antialiased;
   }
 
@@ -181,7 +153,7 @@
     @apply outline-2 outline-offset-2 outline-primary-600;
   }
 
-  /* Smooth color transitions for theme switching */
+  /* Smooth color transitions */
   *, *::before, *::after {
     @apply transition-colors duration-200;
   }
@@ -199,10 +171,6 @@
   ::selection {
     @apply bg-primary-200 text-gray-900;
   }
-
-  html.dark ::selection {
-    @apply bg-primary-900 text-white;
-  }
 }
 
 /* ========================================
@@ -213,7 +181,7 @@
      Buttons
      ======================================== */
 
-  /* Primary - CTA buttons (Enhanced) */
+  /* Primary - CTA buttons */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2
            px-4 py-2 text-sm font-semibold rounded-lg
@@ -221,16 +189,13 @@
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
            bg-gradient-to-r from-primary-600 to-primary-700
-           dark:from-primary-600 dark:to-purple-700
            text-white shadow-md hover:shadow-lg
            hover:-translate-y-0.5 active:translate-y-0
            hover:from-primary-700 hover:to-primary-800
-           dark:hover:from-primary-700 dark:hover:to-purple-800
-           focus-visible:ring-primary-500 dark:focus-visible:ring-primary-500
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-primary-500
+           focus-visible:ring-offset-white;
   }
 
-  /* Primary - Large variant */
   .btn-primary-lg {
     @apply inline-flex items-center justify-center gap-2
            px-6 py-3 text-base font-semibold rounded-lg
@@ -238,16 +203,13 @@
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
            bg-gradient-to-r from-primary-600 to-primary-700
-           dark:from-primary-600 dark:to-purple-700
            text-white shadow-lg hover:shadow-xl
            hover:-translate-y-0.5 active:translate-y-0
            hover:from-primary-700 hover:to-primary-800
-           dark:hover:from-primary-700 dark:hover:to-purple-800
-           focus-visible:ring-primary-500 dark:focus-visible:ring-primary-500
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-primary-500
+           focus-visible:ring-offset-white;
   }
 
-  /* Primary - Small variant */
   .btn-primary-sm {
     @apply inline-flex items-center justify-center gap-2
            px-3 py-1.5 text-xs font-semibold rounded-lg
@@ -255,13 +217,11 @@
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
            bg-gradient-to-r from-primary-600 to-primary-700
-           dark:from-primary-600 dark:to-purple-700
            text-white shadow-sm hover:shadow-md
            hover:-translate-y-0.5 active:translate-y-0
            hover:from-primary-700 hover:to-primary-800
-           dark:hover:from-primary-700 dark:hover:to-purple-800
-           focus-visible:ring-primary-500 dark:focus-visible:ring-primary-500
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-primary-500
+           focus-visible:ring-offset-white;
   }
 
   /* Secondary - Alternative actions */
@@ -271,45 +231,43 @@
            transition-all duration-200
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
-           bg-white dark:bg-dark-bg-secondary
-           text-gray-700 dark:text-dark-text-primary
-           border border-gray-300 dark:border-dark-border-default
-           hover:bg-gray-50 dark:hover:bg-dark-bg-tertiary
-           active:bg-gray-100 dark:active:bg-dark-bg-tertiary
-           focus-visible:ring-gray-500 dark:focus-visible:ring-gray-400
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           bg-white
+           text-gray-700
+           border border-gray-300
+           hover:bg-gray-50
+           active:bg-gray-100
+           focus-visible:ring-gray-500
+           focus-visible:ring-offset-white;
   }
 
-  /* Secondary - Large variant */
   .btn-secondary-lg {
     @apply inline-flex items-center justify-center gap-2
            px-6 py-3 text-base font-semibold rounded-lg
            transition-all duration-200
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
-           bg-white dark:bg-dark-bg-secondary
-           text-gray-700 dark:text-dark-text-primary
-           border border-gray-300 dark:border-dark-border-default
-           hover:bg-gray-50 dark:hover:bg-dark-bg-tertiary
-           active:bg-gray-100 dark:active:bg-dark-bg-tertiary
-           focus-visible:ring-gray-500 dark:focus-visible:ring-gray-400
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           bg-white
+           text-gray-700
+           border border-gray-300
+           hover:bg-gray-50
+           active:bg-gray-100
+           focus-visible:ring-gray-500
+           focus-visible:ring-offset-white;
   }
 
-  /* Secondary - Small variant */
   .btn-secondary-sm {
     @apply inline-flex items-center justify-center gap-2
            px-3 py-1.5 text-xs font-semibold rounded-lg
            transition-all duration-200
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
-           bg-white dark:bg-dark-bg-secondary
-           text-gray-700 dark:text-dark-text-primary
-           border border-gray-300 dark:border-dark-border-default
-           hover:bg-gray-50 dark:hover:bg-dark-bg-tertiary
-           active:bg-gray-100 dark:active:bg-dark-bg-tertiary
-           focus-visible:ring-gray-500 dark:focus-visible:ring-gray-400
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           bg-white
+           text-gray-700
+           border border-gray-300
+           hover:bg-gray-50
+           active:bg-gray-100
+           focus-visible:ring-gray-500
+           focus-visible:ring-offset-white;
   }
 
   /* Ghost - Subtle actions */
@@ -319,39 +277,37 @@
            transition-all duration-200
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
-           text-gray-600 dark:text-dark-text-secondary
-           hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary
-           active:bg-gray-200 dark:active:bg-dark-bg-tertiary
+           text-gray-600
+           hover:bg-gray-100
+           active:bg-gray-200
            focus-visible:ring-gray-400
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-offset-white;
   }
 
-  /* Ghost - Large variant */
   .btn-ghost-lg {
     @apply inline-flex items-center justify-center gap-2
            px-6 py-3 text-base font-medium rounded-lg
            transition-all duration-200
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
-           text-gray-600 dark:text-dark-text-secondary
-           hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary
-           active:bg-gray-200 dark:active:bg-dark-bg-tertiary
+           text-gray-600
+           hover:bg-gray-100
+           active:bg-gray-200
            focus-visible:ring-gray-400
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-offset-white;
   }
 
-  /* Ghost - Small variant */
   .btn-ghost-sm {
     @apply inline-flex items-center justify-center gap-2
            px-3 py-1.5 text-xs font-medium rounded-lg
            transition-all duration-200
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed
-           text-gray-600 dark:text-dark-text-secondary
-           hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary
-           active:bg-gray-200 dark:active:bg-dark-bg-tertiary
+           text-gray-600
+           hover:bg-gray-100
+           active:bg-gray-200
            focus-visible:ring-gray-400
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-offset-white;
   }
 
   /* Danger - Destructive actions */
@@ -364,10 +320,9 @@
            bg-error text-white
            hover:bg-red-600 active:bg-red-700
            focus-visible:ring-error
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-offset-white;
   }
 
-  /* Danger - Large variant */
   .btn-danger-lg {
     @apply inline-flex items-center justify-center gap-2
            px-6 py-3 text-base font-semibold rounded-lg
@@ -377,10 +332,9 @@
            bg-error text-white
            hover:bg-red-600 active:bg-red-700
            focus-visible:ring-error
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-offset-white;
   }
 
-  /* Danger - Small variant */
   .btn-danger-sm {
     @apply inline-flex items-center justify-center gap-2
            px-3 py-1.5 text-xs font-semibold rounded-lg
@@ -390,19 +344,19 @@
            bg-error text-white
            hover:bg-red-600 active:bg-red-700
            focus-visible:ring-error
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-offset-white;
   }
 
   /* Icon - Icon-only buttons */
   .btn-icon {
     @apply p-2 rounded-full
-           text-gray-600 dark:text-dark-text-secondary
-           hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary
-           active:bg-gray-200 dark:active:bg-dark-bg-tertiary
+           text-gray-600
+           hover:bg-gray-100
+           active:bg-gray-200
            transition-colors duration-200
            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
            focus-visible:ring-gray-400
-           focus-visible:ring-offset-white dark:focus-visible:ring-offset-dark-bg-primary;
+           focus-visible:ring-offset-white;
   }
 
   .btn-icon-sm {
@@ -410,20 +364,20 @@
   }
 
   /* ========================================
-     Form Inputs (Enhanced)
+     Form Inputs
      ======================================== */
   .input {
     @apply w-full px-4 py-2.5 text-sm
-           bg-white dark:bg-dark-bg-secondary
-           border border-gray-300 dark:border-dark-border-default
+           bg-white
+           border border-gray-300
            rounded-lg
-           text-gray-900 dark:text-dark-text-primary
-           placeholder-gray-400 dark:placeholder-dark-text-secondary
+           text-gray-900
+           placeholder-gray-400
            focus:outline-none
-           focus:border-primary-500 dark:focus:border-primary-500
-           focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-500/30
-           focus:bg-white dark:focus:bg-dark-bg-tertiary
-           disabled:bg-gray-100 dark:disabled:bg-dark-bg-tertiary
+           focus:border-primary-500
+           focus:ring-2 focus:ring-primary-500/20
+           focus:bg-white
+           disabled:bg-gray-100
            disabled:cursor-not-allowed
            transition-all duration-200;
   }
@@ -447,15 +401,15 @@
   /* Textarea */
   .textarea {
     @apply w-full px-4 py-2.5 text-sm min-h-[80px] resize-y
-           bg-white dark:bg-dark-bg-secondary
-           border border-gray-300 dark:border-dark-border-default
+           bg-white
+           border border-gray-300
            rounded-lg
-           text-gray-900 dark:text-dark-text-primary
-           placeholder-gray-400 dark:placeholder-dark-text-secondary
+           text-gray-900
+           placeholder-gray-400
            focus:outline-none
-           focus:border-primary-600 dark:focus:border-dark-border-focus
-           focus:ring-1 focus:ring-primary-600 dark:focus:ring-dark-border-focus
-           disabled:bg-gray-100 dark:disabled:bg-dark-bg-tertiary
+           focus:border-primary-600
+           focus:ring-1 focus:ring-primary-600
+           disabled:bg-gray-100
            disabled:cursor-not-allowed
            transition-colors duration-200;
   }
@@ -463,15 +417,15 @@
   /* Select */
   .select {
     @apply w-full px-4 py-2.5 text-sm pr-10 appearance-none
-           bg-white dark:bg-dark-bg-secondary
-           border border-gray-300 dark:border-dark-border-default
+           bg-white
+           border border-gray-300
            rounded-lg
-           text-gray-900 dark:text-dark-text-primary
-           placeholder-gray-400 dark:placeholder-dark-text-secondary
+           text-gray-900
+           placeholder-gray-400
            focus:outline-none
-           focus:border-primary-600 dark:focus:border-dark-border-focus
-           focus:ring-1 focus:ring-primary-600 dark:focus:ring-dark-border-focus
-           disabled:bg-gray-100 dark:disabled:bg-dark-bg-tertiary
+           focus:border-primary-600
+           focus:ring-1 focus:ring-primary-600
+           disabled:bg-gray-100
            disabled:cursor-not-allowed
            transition-colors duration-200;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
@@ -480,31 +434,27 @@
     background-size: 1.5em 1.5em;
   }
 
-  html.dark .select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
-  }
-
   /* Checkbox */
   .checkbox {
-    @apply w-4 h-4 rounded border-gray-300 dark:border-dark-border-default
-           bg-white dark:bg-dark-bg-secondary
-           text-primary-600 dark:text-primary-600
+    @apply w-4 h-4 rounded border-gray-300
+           bg-white
+           text-primary-600
            focus:ring-2 focus:ring-primary-600 focus:ring-offset-0
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* Radio */
   .radio {
-    @apply w-4 h-4 border-gray-300 dark:border-dark-border-default
-           bg-white dark:bg-dark-bg-secondary
-           text-primary-600 dark:text-primary-600
+    @apply w-4 h-4 border-gray-300
+           bg-white
+           text-primary-600
            focus:ring-2 focus:ring-primary-600 focus:ring-offset-0
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* Label */
   .label {
-    @apply block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1.5;
+    @apply block text-sm font-medium text-gray-700 mb-1.5;
   }
 
   .label-required::after {
@@ -519,53 +469,53 @@
 
   /* Helper text */
   .input-helper-text {
-    @apply mt-1 text-xs text-gray-500 dark:text-dark-text-secondary;
+    @apply mt-1 text-xs text-gray-500;
   }
 
   /* ========================================
-     Cards & Containers (Enhanced)
+     Cards & Containers
      ======================================== */
   .card {
-    @apply bg-white dark:bg-dark-bg-secondary
+    @apply bg-white
            rounded-xl shadow-sm
-           border border-gray-200 dark:border-dark-border-default
+           border border-gray-200
            transition-all duration-200;
   }
 
   .card-hover {
-    @apply bg-white dark:bg-dark-bg-secondary
+    @apply bg-white
            rounded-xl shadow-sm
-           border border-gray-200 dark:border-dark-border-default
+           border border-gray-200
            transition-all duration-200
            hover:shadow-md hover:-translate-y-0.5;
   }
 
   .card-interactive {
-    @apply bg-white dark:bg-dark-bg-secondary
+    @apply bg-white
            rounded-xl shadow-sm
-           border border-gray-200 dark:border-dark-border-default
+           border border-gray-200
            cursor-pointer transition-all duration-200
            hover:shadow-lg hover:-translate-y-1
-           hover:border-primary-300 dark:hover:border-primary-600;
+           hover:border-primary-300;
   }
 
   .card-elevated {
-    @apply bg-white dark:bg-dark-bg-elevated
+    @apply bg-white
            rounded-xl shadow-lg
-           border border-gray-200 dark:border-dark-border-default;
+           border border-gray-200;
   }
 
   .card-flat {
-    @apply bg-white dark:bg-dark-bg-secondary
-           rounded-lg border border-gray-200 dark:border-dark-border-default;
+    @apply bg-white
+           rounded-lg border border-gray-200;
   }
 
   /* Glassmorphism card */
   .card-glass {
-    @apply bg-white/80 dark:bg-dark-bg-secondary/60
+    @apply bg-white/80
            backdrop-blur-xl
            rounded-xl shadow-lg
-           border border-white/20 dark:border-white/10;
+           border border-white/20;
   }
 
   /* Gradient card */
@@ -575,25 +525,20 @@
            text-white;
   }
 
-  html.dark .card-gradient {
-    @apply bg-gradient-to-br from-primary-600 to-purple-700;
-  }
-
   /* ========================================
-     Navigation (Enhanced)
+     Navigation
      ======================================== */
   .nav-item {
     @apply flex items-center gap-3 px-4 py-2.5 rounded-full
-           text-gray-700 dark:text-dark-text-primary font-medium
+           text-gray-700 font-medium
            transition-all duration-200
-           hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary
+           hover:bg-gray-100
            hover:shadow-sm;
   }
 
   .nav-item-active {
     @apply bg-gradient-to-r from-primary-50 to-primary-100/50
-           dark:from-primary-600/20 dark:to-purple-600/10
-           text-primary-600 dark:text-primary-400
+           text-primary-600
            shadow-sm
            hover:shadow-md;
   }
@@ -608,7 +553,7 @@
 
   .badge-primary {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-           bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300
+           bg-primary-100 text-primary-700
            transition-colors duration-200;
   }
 
@@ -632,33 +577,33 @@
 
   .badge-gray {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-           bg-gray-100 dark:bg-dark-bg-tertiary text-gray-700 dark:text-dark-text-secondary
+           bg-gray-100 text-gray-700
            transition-colors duration-200;
   }
 
   /* ========================================
-     Modals & Overlays (Enhanced)
+     Modals & Overlays
      ======================================== */
   .modal-overlay {
-    @apply fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md z-40;
+    @apply fixed inset-0 bg-black/60 backdrop-blur-md z-40;
     animation: fadeIn var(--duration-normal) var(--ease-out);
   }
 
   .modal-content {
     @apply fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-           bg-white dark:bg-dark-bg-secondary
+           bg-white
            rounded-2xl shadow-2xl
-           border border-gray-200/50 dark:border-white/10
+           border border-gray-200/50
            z-50 max-h-[90vh] overflow-auto;
     animation: modalSlideIn var(--duration-normal) var(--ease-out);
   }
 
   .modal-content-glass {
     @apply fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-           bg-white/90 dark:bg-dark-bg-secondary/80
+           bg-white/90
            backdrop-blur-xl
            rounded-2xl shadow-2xl
-           border border-white/20 dark:border-white/10
+           border border-white/20
            z-50 max-h-[90vh] overflow-auto;
     animation: modalSlideIn var(--duration-normal) var(--ease-out);
   }
@@ -679,28 +624,28 @@
      ======================================== */
   .dropdown-menu {
     @apply absolute right-0 mt-2 w-56 py-1
-           bg-white dark:bg-dark-bg-secondary
+           bg-white
            rounded-lg shadow-lg
-           border border-gray-200 dark:border-dark-border-default
+           border border-gray-200
            z-50;
     animation: slideIn var(--duration-normal) var(--ease-out);
   }
 
   .dropdown-item {
     @apply block px-4 py-2 text-sm
-           text-gray-700 dark:text-dark-text-primary
-           hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary
+           text-gray-700
+           hover:bg-gray-100
            cursor-pointer transition-colors duration-150;
   }
 
   .dropdown-item-disabled {
     @apply block px-4 py-2 text-sm
-           text-gray-700 dark:text-dark-text-primary
+           text-gray-700
            opacity-50 cursor-not-allowed;
   }
 
   .dropdown-divider {
-    @apply my-1 border-t border-gray-200 dark:border-dark-border-default;
+    @apply my-1 border-t border-gray-200;
   }
 
   /* ========================================
@@ -726,11 +671,11 @@
      Divider
      ======================================== */
   .divider {
-    @apply border-t border-gray-200 dark:border-dark-border-default;
+    @apply border-t border-gray-200;
   }
 
   .divider-vertical {
-    @apply border-l border-gray-200 dark:border-dark-border-default;
+    @apply border-l border-gray-200;
   }
 
   /* ========================================
@@ -738,48 +683,48 @@
      ======================================== */
   .avatar {
     @apply inline-flex items-center justify-center
-           rounded-full bg-gray-200 dark:bg-dark-bg-tertiary
-           text-gray-600 dark:text-dark-text-secondary
+           rounded-full bg-gray-200
+           text-gray-600
            font-medium;
   }
 
   .avatar-xs {
     @apply w-6 h-6 rounded-full text-xs
            inline-flex items-center justify-center
-           bg-gray-200 dark:bg-dark-bg-tertiary
-           text-gray-600 dark:text-dark-text-secondary
+           bg-gray-200
+           text-gray-600
            font-medium;
   }
 
   .avatar-sm {
     @apply w-8 h-8 rounded-full text-sm
            inline-flex items-center justify-center
-           bg-gray-200 dark:bg-dark-bg-tertiary
-           text-gray-600 dark:text-dark-text-secondary
+           bg-gray-200
+           text-gray-600
            font-medium;
   }
 
   .avatar-md {
     @apply w-10 h-10 rounded-full text-base
            inline-flex items-center justify-center
-           bg-gray-200 dark:bg-dark-bg-tertiary
-           text-gray-600 dark:text-dark-text-secondary
+           bg-gray-200
+           text-gray-600
            font-medium;
   }
 
   .avatar-lg {
     @apply w-12 h-12 rounded-full text-lg
            inline-flex items-center justify-center
-           bg-gray-200 dark:bg-dark-bg-tertiary
-           text-gray-600 dark:text-dark-text-secondary
+           bg-gray-200
+           text-gray-600
            font-medium;
   }
 
   .avatar-xl {
     @apply w-16 h-16 rounded-full text-xl
            inline-flex items-center justify-center
-           bg-gray-200 dark:bg-dark-bg-tertiary
-           text-gray-600 dark:text-dark-text-secondary
+           bg-gray-200
+           text-gray-600
            font-medium;
   }
 
@@ -800,10 +745,6 @@
     scrollbar-color: var(--color-gray-300) transparent;
   }
 
-  html.dark .scrollbar-thin {
-    scrollbar-color: var(--color-dark-border-default) transparent;
-  }
-
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -818,16 +759,8 @@
     border-radius: 3px;
   }
 
-  html.dark .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: var(--color-dark-border-default);
-  }
-
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-gray-400);
-  }
-
-  html.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-gray-600);
   }
 
   /* Hide scrollbar but keep functionality */
@@ -974,28 +907,26 @@
   }
 
   /* ========================================
-     Glassmorphism (Enhanced)
+     Glassmorphism
      ======================================== */
   .glass {
-    @apply bg-white/80 dark:bg-dark-bg-secondary/80
-           backdrop-blur-md border border-gray-200/50 dark:border-dark-border-default/50;
+    @apply bg-white/80
+           backdrop-blur-md border border-gray-200/50;
   }
 
   .glass-strong {
-    @apply bg-white/90 dark:bg-dark-bg-secondary/90
-           backdrop-blur-xl border border-white/20 dark:border-white/10;
+    @apply bg-white/90
+           backdrop-blur-xl border border-white/20;
   }
 
   .glass-subtle {
-    @apply bg-white/60 dark:bg-dark-bg-secondary/60
-           backdrop-blur-sm border border-gray-200/30 dark:border-white/5;
+    @apply bg-white/60
+           backdrop-blur-sm border border-gray-200/30;
   }
 
-  /* Enhanced glass with gradient overlay */
   .glass-gradient {
     @apply bg-gradient-to-br from-white/90 to-white/70
-           dark:from-dark-bg-secondary/90 dark:to-dark-bg-tertiary/70
-           backdrop-blur-xl border border-white/20 dark:border-white/10;
+           backdrop-blur-xl border border-white/20;
   }
 
   /* Shimmer effect for loading states */
@@ -1013,15 +944,6 @@
       transparent
     );
     animation: shimmer 1.5s infinite;
-  }
-
-  html.dark .shimmer::before {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.05),
-      transparent
-    );
   }
 
   @keyframes shimmer {
@@ -1064,10 +986,6 @@
   .text-gradient {
     @apply bg-clip-text text-transparent
            bg-gradient-to-r from-primary-600 to-purple-600;
-  }
-
-  html.dark .text-gradient {
-    @apply bg-gradient-to-r from-primary-400 to-purple-400;
   }
 
   /* ========================================

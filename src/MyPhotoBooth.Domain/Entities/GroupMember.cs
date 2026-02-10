@@ -17,4 +17,5 @@ public class GroupMember
 
     // Navigation properties
     public Group? Group { get; set; }
+    public ApplicationUser? User { get; set; }
 }

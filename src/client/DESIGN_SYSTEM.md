@@ -1,6 +1,6 @@
 # MyPhotoBooth Design System
 
-A comprehensive design system for MyPhotoBooth, inspired by Google Photos with clean, modern aesthetics and full dark mode support.
+A comprehensive design system for MyPhotoBooth, inspired by Google Photos with clean, modern aesthetics.
 
 ## Table of Contents
 
@@ -10,8 +10,7 @@ A comprehensive design system for MyPhotoBooth, inspired by Google Photos with c
 4. [Spacing](#spacing)
 5. [Components](#components)
 6. [Animations](#animations)
-7. [Dark Mode](#dark-mode)
-8. [Accessibility](#accessibility)
+7. [Accessibility](#accessibility)
 
 ---
 
@@ -20,7 +19,6 @@ A comprehensive design system for MyPhotoBooth, inspired by Google Photos with c
 The MyPhotoBooth design system provides:
 
 - **Consistent visual language** across all components
-- **Comprehensive dark mode support** with automatic theme switching
 - **Accessibility-first design** with WCAG AA contrast ratios
 - **Responsive components** that work on all screen sizes
 - **Smooth animations** with reduced motion support
@@ -48,7 +46,7 @@ Used for primary actions, links, and brand elements.
 | `--color-primary-500` | #4285f4 | Links, info badges |
 | `--color-primary-600` | #1a73e8 | Primary buttons, active states |
 | `--color-primary-700` | #1967d2 | Button hover |
-| `--color-primary-900` | #174ea6 | Dark mode active states |
+| `--color-primary-900` | #174ea6 | Darker accents |
 
 ### Gray Scale (Neutral)
 
@@ -77,23 +75,6 @@ Used for status messages and feedback.
 | `--color-warning-light` | #fce8b2 | Warning backgrounds |
 | `--color-error` | #ea4335 | Error messages |
 | `--color-error-light` | #fad2cf | Error backgrounds |
-
-### Dark Mode Colors (Enhanced)
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--color-dark-bg-primary` | #0a0e1a | Main background - deep blue-black |
-| `--color-dark-bg-secondary` | #121829 | Cards, panels - elevated |
-| `--color-dark-bg-tertiary` | #1a2236 | Hover states - surface |
-| `--color-dark-text-primary` | #f1f5f9 | Primary text - warm white |
-| `--color-dark-text-secondary` | #a8b1c7 | Secondary text - muted |
-| `--color-dark-border-default` | #2a3447 | Borders - subtle |
-| `--color-dark-border-focus` | #60a5fa | Focus - bright blue |
-
-**Dark Mode Gradients:**
-- `--color-dark-gradient-primary`: Linear gradient from blue to purple
-- `--color-dark-gradient-surface`: Subtle gradient overlay for depth
-- `--color-dark-gradient-overlay`: Bottom gradient for text readability
 
 ---
 
@@ -156,7 +137,7 @@ Based on a 4px grid system.
 ### Border Radius
 
 | Token | Size | Usage |
-|-------|------|-------|
+|-------|-------|-------|
 | `rounded-lg` | 8px | Cards, buttons |
 | `rounded-xl` | 12px | Large cards |
 | `rounded-full` | 9999px | Pills, circles |
@@ -286,7 +267,7 @@ Use for icon-only actions.
 </label>
 ```
 
-### Cards (Enhanced)
+### Cards
 
 #### Basic Card
 
@@ -426,53 +407,6 @@ The design system automatically respects the user's `prefers-reduced-motion` set
 
 ---
 
-## Dark Mode
-
-### Implementation
-
-Dark mode is implemented using Tailwind CSS's `dark:` variant with class-based switching. The `dark` class is applied to the `<html>` element.
-
-```css
-/* Light mode (default) */
-body {
-  @apply bg-gray-50 text-gray-900;
-}
-
-/* Dark mode */
-html.dark body {
-  @apply bg-dark-bg-primary text-dark-text-primary;
-}
-```
-
-### Component Dark Mode
-
-All components include dark mode variants:
-
-```css
-.button {
-  @apply bg-white text-gray-900;           /* Light mode */
-  @apply dark:bg-dark-bg-secondary dark:text-dark-text-primary; /* Dark mode */
-}
-```
-
-### Dark Mode Toggle
-
-The theme toggle supports three states:
-
-1. **Light** - Forces light mode
-2. **Dark** - Forces dark mode
-3. **System** - Follows OS preference
-
-```typescript
-// Set theme mode
-const setThemeMode = (mode: 'light' | 'dark' | 'system') => {
-  localStorage.setItem('theme-mode', mode)
-  // Theme is applied automatically by useTheme hook
-}
-```
-
----
-
 ## Accessibility
 
 ### Focus Management
@@ -532,7 +466,6 @@ All color combinations meet WCAG AA standards:
 - Reserve primary color for CTAs and links
 - Use semantic colors for status only
 - Gray scale for borders and backgrounds
-- Always provide dark mode alternatives
 
 ### Typography
 
@@ -548,8 +481,7 @@ All color combinations meet WCAG AA standards:
 ```
 src/client/src/styles/
 ├── globals.css          # Main design system file
-├── index.css            # Base reset styles
-└── design-system.css    # Design token reference (optional)
+└── index.css            # Base reset styles
 ```
 
 ---
@@ -559,10 +491,9 @@ src/client/src/styles/
 When adding new components:
 
 1. Follow existing patterns in `globals.css`
-2. Include dark mode variants
-3. Add focus states for accessibility
-4. Document usage in this file
-5. Test in both light and dark modes
+2. Add focus states for accessibility
+3. Document usage in this file
+4. Test for accessibility
 
 ---
 
@@ -605,7 +536,7 @@ Glass effect with backdrop blur for modern, layered interfaces:
 ### Enhanced Buttons
 
 Primary buttons now feature:
-- Gradient backgrounds (blue to purple in dark mode)
+- Gradient backgrounds (blue to purple)
 - Shadow effects on hover
 - Subtle lift animation
 - Enhanced focus rings
@@ -619,38 +550,6 @@ Primary buttons now feature:
 
 ---
 
-## Dark Mode Best Practices
-
-### 1. Background Depth
-
-Use the three-tier background system for visual hierarchy:
-- `dark-bg-primary` - Deepest background (page level)
-- `dark-bg-secondary` - Elevated surfaces (cards, panels)
-- `dark-bg-tertiary` - Interactive elements (hover states)
-
-### 2. Text Contrast
-
-Ensure proper contrast ratios:
-- Use `dark-text-primary` for headings and important text
-- Use `dark-text-secondary` for body text and descriptions
-- Use `dark-text-tertiary` for disabled states
-
-### 3. Border Visibility
-
-Borders should be subtle but visible:
-- Use `dark-border-default` for standard borders
-- Use white/10 or white/5 for subtle separators
-- Avoid pure black borders - use dark blue-gray tones
-
-### 4. Accent Colors
-
-In dark mode, accent colors should be slightly enhanced:
-- Primary blue works well but can be warmed
-- Purple accents complement blue in dark mode
-- Gradients add depth and visual interest
-
----
-
 ## Version
 
 **Current Version:** 3.0.0
@@ -658,7 +557,7 @@ In dark mode, accent colors should be slightly enhanced:
 **Last Updated:** 2026-02-10
 
 **Changes in v3.0.0:**
-- Enhanced dark mode color palette with deeper, richer backgrounds
+- Removed dark mode support, simplified to light-only theme
 - Added glassmorphism utility classes
 - Improved button gradients and hover effects
 - Enhanced modal and navigation styling
