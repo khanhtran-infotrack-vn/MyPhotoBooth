@@ -33,6 +33,12 @@ public class SearchPhotosQueryHandler : IRequestHandler<SearchPhotosQuery, Resul
         _logger.LogInformation("Search for '{SearchTerm}' by user {UserId} returned {Count} results",
             request.SearchTerm, request.UserId, totalCount);
 
+        // Get favorite status for all photos in batch
+        var photoIds = photos.Select(p => p.Id).ToList();
+        var favoriteStatus = photoIds.Any()
+            ? await _photoRepository.GetFavoriteStatusAsync(photoIds, request.UserId, cancellationToken)
+            : new Dictionary<Guid, bool>();
+
         var photoList = photos.Select(p => new PhotoListResponse
         {
             Id = p.Id,
@@ -41,7 +47,8 @@ public class SearchPhotosQueryHandler : IRequestHandler<SearchPhotosQuery, Resul
             Height = p.Height,
             CapturedAt = p.CapturedAt,
             UploadedAt = p.UploadedAt,
-            ThumbnailPath = p.ThumbnailPath
+            ThumbnailPath = p.ThumbnailPath,
+            IsFavorite = favoriteStatus.GetValueOrDefault(p.Id, false)
         }).ToList();
 
         return Result.Success(PaginatedResult<PhotoListResponse>.Create(

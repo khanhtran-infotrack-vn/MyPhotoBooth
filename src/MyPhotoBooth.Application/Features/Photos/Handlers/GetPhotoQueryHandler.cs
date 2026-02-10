@@ -31,6 +31,9 @@ public class GetPhotoQueryHandler : IRequestHandler<GetPhotoQuery, Result<PhotoD
 
         var photo = photoResult.Value;
 
+        // Check if photo is favorited
+        var isFavorite = await _photoRepository.IsFavoriteAsync(request.PhotoId, request.UserId, cancellationToken);
+
         return Result.Success(new PhotoDetailsResponse
         {
             Id = photo.Id,
@@ -42,7 +45,8 @@ public class GetPhotoQueryHandler : IRequestHandler<GetPhotoQuery, Result<PhotoD
             UploadedAt = photo.UploadedAt,
             Description = photo.Description,
             ExifData = photo.ExifDataJson,
-            Tags = photo.PhotoTags.Select(pt => pt.Tag.Name).ToList()
+            Tags = photo.PhotoTags.Select(pt => pt.Tag.Name).ToList(),
+            IsFavorite = isFavorite
         });
     }
 

@@ -7,7 +7,7 @@ export interface Photo {
   capturedAt: string | null
   uploadedAt: string
   thumbnailPath: string
-  isFavorite?: boolean
+  isFavorite: boolean
 }
 
 export interface PhotoDetails extends Photo {
@@ -15,6 +15,7 @@ export interface PhotoDetails extends Photo {
   description: string | null
   exifData: string | null
   tags: string[]
+  isFavorite: boolean
 }
 
 export interface PhotoGroup {

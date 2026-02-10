@@ -20,6 +20,10 @@ public class GetPhotoQueryHandlerTests
     public GetPhotoQueryHandlerTests()
     {
         _photoRepositoryMock = new Mock<IPhotoRepository>();
+        // Setup default behavior for IsFavoriteAsync
+        _photoRepositoryMock
+            .Setup(x => x.IsFavoriteAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
         _loggerMock = new Mock<ILogger<GetPhotoQueryHandler>>();
         _handler = new GetPhotoQueryHandler(_photoRepositoryMock.Object, _loggerMock.Object);
     }

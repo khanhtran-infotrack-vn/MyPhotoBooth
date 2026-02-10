@@ -38,7 +38,8 @@ public class GetFavoritePhotosQueryHandler : IRequestHandler<GetFavoritePhotosQu
             Height = p.Height,
             CapturedAt = p.CapturedAt,
             UploadedAt = p.UploadedAt,
-            ThumbnailPath = p.ThumbnailPath
+            ThumbnailPath = p.ThumbnailPath,
+            IsFavorite = true // All photos in this list are favorites
         }).ToList();
 
         return Result.Success(PaginatedResult<PhotoListResponse>.Create(

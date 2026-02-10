@@ -99,6 +99,20 @@ public class PhotoRepository : IPhotoRepository
             .AnyAsync(fp => fp.PhotoId == photoId && fp.UserId == userId, cancellationToken);
     }
 
+    public async Task<Dictionary<Guid, bool>> GetFavoriteStatusAsync(IEnumerable<Guid> photoIds, string userId, CancellationToken cancellationToken = default)
+    {
+        var photoIdList = photoIds.ToList();
+        if (!photoIdList.Any())
+            return new Dictionary<Guid, bool>();
+
+        var favoritePhotoIds = await _context.FavoritePhotos
+            .Where(fp => fp.UserId == userId && photoIdList.Contains(fp.PhotoId))
+            .Select(fp => fp.PhotoId)
+            .ToListAsync(cancellationToken);
+
+        return photoIdList.ToDictionary(id => id, id => favoritePhotoIds.Contains(id));
+    }
+
     public async Task ToggleFavoriteAsync(Guid photoId, string userId, CancellationToken cancellationToken = default)
     {
         var existing = await _context.FavoritePhotos

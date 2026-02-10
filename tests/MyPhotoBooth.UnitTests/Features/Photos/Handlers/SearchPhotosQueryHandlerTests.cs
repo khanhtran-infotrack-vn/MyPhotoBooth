@@ -20,6 +20,13 @@ public class SearchPhotosQueryHandlerTests
     public SearchPhotosQueryHandlerTests()
     {
         _photoRepositoryMock = new Mock<IPhotoRepository>();
+        // Setup default behavior for GetFavoriteStatusAsync
+        _photoRepositoryMock
+            .Setup(x => x.GetFavoriteStatusAsync(
+                It.IsAny<IEnumerable<Guid>>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, bool>());
         _loggerMock = new Mock<ILogger<SearchPhotosQueryHandler>>();
         _handler = new SearchPhotosQueryHandler(
             _photoRepositoryMock.Object,

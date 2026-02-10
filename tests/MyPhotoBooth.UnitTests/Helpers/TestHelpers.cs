@@ -11,7 +11,14 @@ public static class TestHelpers
 {
     public static Mock<IPhotoRepository> CreatePhotoRepositoryMock()
     {
-        return new Mock<IPhotoRepository>();
+        var mock = new Mock<IPhotoRepository>();
+        // Setup default behavior for GetFavoriteStatusAsync - returns empty dictionary
+        mock.Setup(x => x.GetFavoriteStatusAsync(
+            It.IsAny<IEnumerable<Guid>>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, bool>());
+        return mock;
     }
 
     public static Mock<IFileStorageService> CreateFileStorageServiceMock()

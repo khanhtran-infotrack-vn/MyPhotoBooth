@@ -25,6 +25,7 @@ public class PhotoDetailsResponse
     public string? Description { get; set; }
     public string? ExifData { get; set; }
     public List<string> Tags { get; set; } = new();
+    public bool IsFavorite { get; set; }
 }
 
 public class PhotoListResponse
@@ -36,6 +37,7 @@ public class PhotoListResponse
     public DateTime? CapturedAt { get; set; }
     public DateTime UploadedAt { get; set; }
     public string ThumbnailPath { get; set; } = string.Empty;
+    public bool IsFavorite { get; set; }
 }
 
 public class UpdatePhotoRequest

@@ -13,6 +13,7 @@ public interface IPhotoRepository
     Task UpdateAsync(Photo photo, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> IsFavoriteAsync(Guid photoId, string userId, CancellationToken cancellationToken = default);
+    Task<Dictionary<Guid, bool>> GetFavoriteStatusAsync(IEnumerable<Guid> photoIds, string userId, CancellationToken cancellationToken = default);
     Task ToggleFavoriteAsync(Guid photoId, string userId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Photo>> GetFavoritesAsync(string userId, int skip = 0, int take = 50, CancellationToken cancellationToken = default);
     Task<int> GetFavoritesCountAsync(string userId, CancellationToken cancellationToken = default);

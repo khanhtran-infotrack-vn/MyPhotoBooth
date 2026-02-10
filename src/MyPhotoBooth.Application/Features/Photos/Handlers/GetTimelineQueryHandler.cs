@@ -46,6 +46,12 @@ public class GetTimelineQueryHandler : IRequestHandler<GetTimelineQuery, Result<
         var photos = await _photoRepository.GetTimelineAsync(userId, fromDate, toDate, skip, request.PageSize, cancellationToken);
         var totalCount = await _photoRepository.GetTimelineCountAsync(userId, fromDate, toDate, cancellationToken);
 
+        // Get favorite status for all photos in batch
+        var photoIds = photos.Select(p => p.Id).ToList();
+        var favoriteStatus = photoIds.Any()
+            ? await _photoRepository.GetFavoriteStatusAsync(photoIds, userId, cancellationToken)
+            : new Dictionary<Guid, bool>();
+
         var photoList = photos.Select(p => new PhotoListResponse
         {
             Id = p.Id,
@@ -54,7 +60,8 @@ public class GetTimelineQueryHandler : IRequestHandler<GetTimelineQuery, Result<
             Height = p.Height,
             CapturedAt = p.CapturedAt,
             UploadedAt = p.UploadedAt,
-            ThumbnailPath = p.ThumbnailPath
+            ThumbnailPath = p.ThumbnailPath,
+            IsFavorite = favoriteStatus.GetValueOrDefault(p.Id, false)
         }).ToList();
 
         return Result.Success(PaginatedResult<PhotoListResponse>.Create(

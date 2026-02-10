@@ -10,13 +10,16 @@ namespace MyPhotoBooth.Application.Features.Albums.Handlers;
 public class GetAlbumQueryHandler : IRequestHandler<GetAlbumQuery, Result<AlbumDetailsResponse>>
 {
     private readonly IAlbumRepository _albumRepository;
+    private readonly IPhotoRepository _photoRepository;
     private readonly ILogger<GetAlbumQueryHandler> _logger;
 
     public GetAlbumQueryHandler(
         IAlbumRepository albumRepository,
+        IPhotoRepository photoRepository,
         ILogger<GetAlbumQueryHandler> logger)
     {
         _albumRepository = albumRepository;
+        _photoRepository = photoRepository;
         _logger = logger;
     }
 
@@ -29,6 +32,12 @@ public class GetAlbumQueryHandler : IRequestHandler<GetAlbumQuery, Result<AlbumD
             return Result.Failure<AlbumDetailsResponse>(albumResult.Error);
 
         var album = albumResult.Value;
+
+        // Get photo IDs for favorite status lookup
+        var photoIds = album.AlbumPhotos.Select(ap => ap.Photo.Id).ToList();
+        var favoriteStatus = photoIds.Any()
+            ? await _photoRepository.GetFavoriteStatusAsync(photoIds, request.UserId, cancellationToken)
+            : new Dictionary<Guid, bool>();
 
         return Result.Success(new AlbumDetailsResponse
         {
@@ -46,7 +55,8 @@ public class GetAlbumQueryHandler : IRequestHandler<GetAlbumQuery, Result<AlbumD
                 Height = ap.Photo.Height,
                 CapturedAt = ap.Photo.CapturedAt,
                 UploadedAt = ap.Photo.UploadedAt,
-                ThumbnailPath = ap.Photo.ThumbnailPath
+                ThumbnailPath = ap.Photo.ThumbnailPath,
+                IsFavorite = favoriteStatus.GetValueOrDefault(ap.Photo.Id, false)
             }).ToList()
         });
     }

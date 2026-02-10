@@ -14,14 +14,16 @@ namespace MyPhotoBooth.UnitTests.Features.Albums.Handlers;
 public class GetAlbumPhotosQueryHandlerTests
 {
     private readonly Mock<IAlbumRepository> _albumRepositoryMock;
+    private readonly Mock<IPhotoRepository> _photoRepositoryMock;
     private readonly Mock<ILogger<GetAlbumPhotosQueryHandler>> _loggerMock;
     private readonly GetAlbumPhotosQueryHandler _handler;
 
     public GetAlbumPhotosQueryHandlerTests()
     {
         _albumRepositoryMock = new Mock<IAlbumRepository>();
+        _photoRepositoryMock = new Mock<IPhotoRepository>();
         _loggerMock = new Mock<ILogger<GetAlbumPhotosQueryHandler>>();
-        _handler = new GetAlbumPhotosQueryHandler(_albumRepositoryMock.Object, _loggerMock.Object);
+        _handler = new GetAlbumPhotosQueryHandler(_albumRepositoryMock.Object, _photoRepositoryMock.Object, _loggerMock.Object);
     }
 
     [Fact]
@@ -68,6 +70,14 @@ public class GetAlbumPhotosQueryHandlerTests
         _albumRepositoryMock
             .Setup(x => x.GetByIdAsync(albumId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(album);
+
+        // Setup favorite status mock (no favorites for this test)
+        _photoRepositoryMock
+            .Setup(x => x.GetFavoriteStatusAsync(
+                It.IsAny<IEnumerable<Guid>>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, bool>());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -122,6 +132,14 @@ public class GetAlbumPhotosQueryHandlerTests
             .Setup(x => x.GetByIdAsync(albumId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(album);
 
+        // Setup favorite status mock (no favorites for this test)
+        _photoRepositoryMock
+            .Setup(x => x.GetFavoriteStatusAsync(
+                It.IsAny<IEnumerable<Guid>>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, bool>());
+
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
@@ -148,6 +166,14 @@ public class GetAlbumPhotosQueryHandlerTests
         _albumRepositoryMock
             .Setup(x => x.GetByIdAsync(albumId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(album);
+
+        // Setup favorite status mock (no favorites for this test)
+        _photoRepositoryMock
+            .Setup(x => x.GetFavoriteStatusAsync(
+                It.IsAny<IEnumerable<Guid>>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, bool>());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -190,6 +216,14 @@ public class GetAlbumPhotosQueryHandlerTests
             .Setup(x => x.GetByIdAsync(albumId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(album);
 
+        // Setup favorite status mock (no favorites for this test)
+        _photoRepositoryMock
+            .Setup(x => x.GetFavoriteStatusAsync(
+                It.IsAny<IEnumerable<Guid>>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, bool>());
+
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
@@ -231,6 +265,14 @@ public class GetAlbumPhotosQueryHandlerTests
         _albumRepositoryMock
             .Setup(x => x.GetByIdAsync(albumId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(album);
+
+        // Setup favorite status mock (no favorites for this test)
+        _photoRepositoryMock
+            .Setup(x => x.GetFavoriteStatusAsync(
+                It.IsAny<IEnumerable<Guid>>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, bool>());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
