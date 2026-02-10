@@ -2,43 +2,134 @@ import { useState, useMemo } from 'react'
 import { PhotoGrid, SelectionBar } from '../../components/photos'
 import { Lightbox } from '../../components/lightbox'
 import { usePhotos, getAllPhotosFromPages } from '../../hooks/usePhotos'
+import { useFavorites, getAllFavoritesFromPages } from '../../hooks/useFavorites'
+import { usePhotoSearch } from '../../hooks/usePhotoSearch'
 import { ShareModal } from '../sharing/ShareModal'
 import type { Photo } from '../../types'
 
+type FilterType = 'all' | 'favorites' | 'recent' | 'search'
+
 export default function PhotoGallery() {
+ const [filterType, setFilterType] = useState<FilterType>('all')
  const [lightboxOpen, setLightboxOpen] = useState(false)
  const [lightboxIndex, setLightboxIndex] = useState(0)
  const [sharePhoto, setSharePhoto] = useState<Photo | null>(null)
  const [searchQuery, setSearchQuery] = useState('')
 
+ // All photos query
  const {
-  data,
-  isLoading,
-  isFetchingNextPage,
-  hasNextPage,
-  fetchNextPage,
+  data: allPhotosData,
+  isLoading: isLoadingAllPhotos,
+  isFetchingNextPage: isFetchingNextAllPhotos,
+  hasNextPage: hasNextAllPhotos,
+  fetchNextPage: fetchNextAllPhotos,
  } = usePhotos()
 
- // Flatten all pages into a single array
- const photos = useMemo(
-  () => getAllPhotosFromPages(data?.pages),
-  [data?.pages]
+ // Favorites query
+ const {
+  data: favoritesData,
+  isLoading: isLoadingFavorites,
+  isFetchingNextPage: isFetchingNextFavorites,
+  hasNextPage: hasNextFavorites,
+  fetchNextPage: fetchNextFavorites,
+ } = useFavorites()
+
+ // Search query (server-side)
+ const { data: searchData, isLoading: isSearching } = usePhotoSearch(searchQuery)
+
+ // Flatten all pages into a single array based on filter type
+ const allPhotos = useMemo(
+  () => getAllPhotosFromPages(allPhotosData?.pages),
+  [allPhotosData?.pages]
  )
 
- // Filter photos by search query
- const filteredPhotos = useMemo(() => {
-  if (!searchQuery.trim()) return photos
-  const query = searchQuery.toLowerCase()
-  return photos.filter(photo =>
-   photo.originalFileName.toLowerCase().includes(query)
-  )
- }, [photos, searchQuery])
+ const favoritePhotos = useMemo(
+  () => getAllFavoritesFromPages(favoritesData?.pages),
+  [favoritesData?.pages]
+ )
+
+ const searchResults = useMemo(
+  () => searchData?.items ?? [],
+  [searchData?.items]
+ )
+
+ // Determine which data to use based on filter type
+ const { photos, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, totalCount } = useMemo(() => {
+  switch (filterType) {
+   case 'favorites':
+    return {
+     photos: favoritePhotos,
+     isLoading: isLoadingFavorites,
+     isFetchingNextPage: isFetchingNextFavorites,
+     hasNextPage: hasNextFavorites,
+     fetchNextPage: fetchNextFavorites,
+     totalCount: favoritesData?.pages[0]?.totalCount ?? 0,
+    }
+   case 'recent':
+    // Recent uses same data as all photos (already sorted by uploadedAt DESC)
+    return {
+     photos: allPhotos,
+     isLoading: isLoadingAllPhotos,
+     isFetchingNextPage: isFetchingNextAllPhotos,
+     hasNextPage: hasNextAllPhotos,
+     fetchNextPage: fetchNextAllPhotos,
+     totalCount: allPhotosData?.pages[0]?.totalCount ?? 0,
+    }
+   case 'search':
+    return {
+     photos: searchResults,
+     isLoading: isSearching,
+     isFetchingNextPage: false,
+     hasNextPage: false,
+     fetchNextPage: () => {},
+     totalCount: searchData?.totalCount ?? 0,
+    }
+   default:
+    return {
+     photos: allPhotos,
+     isLoading: isLoadingAllPhotos,
+     isFetchingNextPage: isFetchingNextAllPhotos,
+     hasNextPage: hasNextAllPhotos,
+     fetchNextPage: fetchNextAllPhotos,
+     totalCount: allPhotosData?.pages[0]?.totalCount ?? 0,
+    }
+  }
+ }, [
+  filterType,
+  allPhotos,
+  favoritePhotos,
+  searchResults,
+  isLoadingAllPhotos,
+  isLoadingFavorites,
+  isSearching,
+  isFetchingNextAllPhotos,
+  isFetchingNextFavorites,
+  hasNextAllPhotos,
+  hasNextFavorites,
+  fetchNextAllPhotos,
+  fetchNextFavorites,
+  allPhotosData?.pages,
+  favoritesData?.pages,
+  searchData,
+ ])
 
  const handlePhotoClick = (photo: Photo, index: number) => {
-  // Find the actual index in the filtered photos array
-  const flatIndex = filteredPhotos.findIndex((p) => p.id === photo.id)
-  setLightboxIndex(flatIndex >= 0 ? flatIndex : index)
+  setLightboxIndex(index)
   setLightboxOpen(true)
+ }
+
+ const handleFilterChange = (newFilter: FilterType) => {
+  setFilterType(newFilter)
+  setSearchQuery('') // Clear search when changing filters
+ }
+
+ const handleSearchChange = (value: string) => {
+  setSearchQuery(value)
+  if (value.trim().length >= 2) {
+   setFilterType('search')
+  } else if (value.trim().length === 0) {
+   setFilterType('all')
+  }
  }
 
  const handleLoadMore = () => {
@@ -47,7 +138,7 @@ export default function PhotoGallery() {
   }
  }
 
- const totalCount = data?.pages[0]?.totalCount ?? 0
+ // Removed - now calculated in useMemo
 
  return (
   <div className="min-h-screen">
@@ -81,13 +172,13 @@ export default function PhotoGallery() {
         <input
          type="text"
          value={searchQuery}
-         onChange={(e) => setSearchQuery(e.target.value)}
-         placeholder="Search photos..."
+         onChange={(e) => handleSearchChange(e.target.value)}
+         placeholder="Search photos by name, description, tags..."
          className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200 shadow-sm"
         />
         {searchQuery && (
          <button
-          onClick={() => setSearchQuery('')}
+          onClick={() => handleSearchChange('')}
           className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
          >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -95,25 +186,39 @@ export default function PhotoGallery() {
           </svg>
          </button>
         )}
+        {isSearching && (
+         <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+          <div className="w-4 h-4 border-2 border-gray-400 border-t-primary-600 rounded-full animate-spin" />
+         </div>
+        )}
        </div>
       </div>
      </div>
 
      {/* Filter Pills */}
      <div className="flex flex-wrap gap-2 mt-6">
-      <button className="hero-filter-pill-minimal hero-filter-pill-minimal-active">
+      <button
+       onClick={() => handleFilterChange('all')}
+       className={`hero-filter-pill-minimal ${filterType === 'all' ? 'hero-filter-pill-minimal-active' : ''}`}
+      >
        <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
        </svg>
        All Photos
       </button>
-      <button className="hero-filter-pill-minimal">
+      <button
+       onClick={() => handleFilterChange('favorites')}
+       className={`hero-filter-pill-minimal ${filterType === 'favorites' ? 'hero-filter-pill-minimal-active' : ''}`}
+      >
        <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
        </svg>
        Favorites
       </button>
-      <button className="hero-filter-pill-minimal">
+      <button
+       onClick={() => handleFilterChange('recent')}
+       className={`hero-filter-pill-minimal ${filterType === 'recent' ? 'hero-filter-pill-minimal-active' : ''}`}
+      >
        <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
        </svg>
@@ -171,7 +276,7 @@ export default function PhotoGallery() {
     )}
 
     {/* No Search Results */}
-    {!isLoading && photos.length > 0 && filteredPhotos.length === 0 && (
+    {!isLoading && filterType === 'search' && photos.length === 0 && searchQuery.trim().length >= 2 && (
      <div className="flex flex-col items-center justify-center py-24">
       <div className="w-24 h-24 mb-6 rounded-2xl bg-gray-100 flex items-center justify-center">
        <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -183,13 +288,28 @@ export default function PhotoGallery() {
      </div>
     )}
 
+    {/* Empty Favorites */}
+    {!isLoading && filterType === 'favorites' && photos.length === 0 && (
+     <div className="flex flex-col items-center justify-center py-24">
+      <div className="w-24 h-24 mb-6 rounded-2xl bg-gray-100 flex items-center justify-center">
+       <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+         d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+        />
+       </svg>
+      </div>
+      <h3 className="text-2xl font-bold text-gray-900 mb-2">No favorites yet</h3>
+      <p className="text-gray-600">Mark photos as favorites to see them here</p>
+     </div>
+    )}
+
     {/* Photo Grid */}
-    {!isLoading && filteredPhotos.length > 0 && (
+    {!isLoading && photos.length > 0 && (
      <PhotoGrid
-      photos={filteredPhotos}
+      photos={photos}
       onPhotoClick={handlePhotoClick}
       onLoadMore={handleLoadMore}
-      hasMore={hasNextPage && !searchQuery}
+      hasMore={hasNextPage && filterType !== 'search'}
       isLoading={isFetchingNextPage}
      />
     )}
@@ -199,9 +319,9 @@ export default function PhotoGallery() {
    <SelectionBar />
 
    {/* Lightbox */}
-   {lightboxOpen && filteredPhotos.length > 0 && (
+   {lightboxOpen && photos.length > 0 && (
     <Lightbox
-     photos={filteredPhotos}
+     photos={photos}
      initialIndex={lightboxIndex}
      onClose={() => setLightboxOpen(false)}
      onShare={(photo) => {

@@ -37,9 +37,9 @@ public class PhotosController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> ListPhotos([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ListPhotos([FromQuery] int page = 1, [FromQuery] int pageSize = 50, [FromQuery] PhotoSortOrder sortBy = PhotoSortOrder.UploadedAtDesc, CancellationToken cancellationToken = default)
     {
-        var query = new GetPhotosQuery(page, pageSize, null, null, GetUserId());
+        var query = new GetPhotosQuery(page, pageSize, null, null, GetUserId(), sortBy);
         var result = await _mediator.Send(query, cancellationToken);
         return result.ToHttpResponse();
     }
@@ -96,6 +96,30 @@ public class PhotosController : ControllerBase
     public async Task<IActionResult> GetTimeline([FromQuery] int? year, [FromQuery] int? month, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
         var query = new GetTimelineQuery(year, month, page, pageSize, GetUserId());
+        var result = await _mediator.Send(query, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
+    [HttpPost("{id}/favorite")]
+    public async Task<IActionResult> ToggleFavorite(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new ToggleFavoritePhotoCommand(id, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
+    [HttpGet("favorites")]
+    public async Task<IActionResult> GetFavorites([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
+    {
+        var query = new GetFavoritePhotosQuery(GetUserId(), page, pageSize);
+        var result = await _mediator.Send(query, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchPhotos([FromQuery] string q, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
+    {
+        var query = new SearchPhotosQuery(q, GetUserId(), page, pageSize);
         var result = await _mediator.Send(query, cancellationToken);
         return result.ToHttpResponse();
     }

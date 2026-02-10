@@ -8,30 +8,27 @@ using MyPhotoBooth.Application.Interfaces;
 
 namespace MyPhotoBooth.Application.Features.Photos.Handlers;
 
-public class GetPhotosQueryHandler : IRequestHandler<GetPhotosQuery, Result<PaginatedResult<PhotoListResponse>>>
+public class GetFavoritePhotosQueryHandler : IRequestHandler<GetFavoritePhotosQuery, Result<PaginatedResult<PhotoListResponse>>>
 {
     private readonly IPhotoRepository _photoRepository;
-    private readonly ILogger<GetPhotosQueryHandler> _logger;
+    private readonly ILogger<GetFavoritePhotosQueryHandler> _logger;
 
-    public GetPhotosQueryHandler(
+    public GetFavoritePhotosQueryHandler(
         IPhotoRepository photoRepository,
-        ILogger<GetPhotosQueryHandler> logger)
+        ILogger<GetFavoritePhotosQueryHandler> logger)
     {
         _photoRepository = photoRepository;
         _logger = logger;
     }
 
     public async Task<Result<PaginatedResult<PhotoListResponse>>> Handle(
-        GetPhotosQuery request,
+        GetFavoritePhotosQuery request,
         CancellationToken cancellationToken)
     {
-        var userId = request.UserId ?? throw new UnauthorizedAccessException(Errors.General.Unauthorized);
-
         var skip = (request.Page - 1) * request.PageSize;
 
-        // Get photos - repository already sorts by UploadedAt DESC by default
-        var photos = await _photoRepository.GetByUserIdAsync(userId, skip, request.PageSize, cancellationToken);
-        var totalCount = await _photoRepository.GetCountByUserIdAsync(userId, cancellationToken);
+        var photos = await _photoRepository.GetFavoritesAsync(request.UserId, skip, request.PageSize, cancellationToken);
+        var totalCount = await _photoRepository.GetFavoritesCountAsync(request.UserId, cancellationToken);
 
         var photoList = photos.Select(p => new PhotoListResponse
         {

@@ -21,6 +21,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<GroupSharedContent> GroupSharedContents => Set<GroupSharedContent>();
+    public DbSet<FavoritePhoto> FavoritePhotos => Set<FavoritePhoto>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -37,10 +38,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(p => p.ContentType).IsRequired().HasMaxLength(100);
             entity.Property(p => p.UserId).IsRequired();
             entity.Property(p => p.ExifDataJson).HasColumnType("jsonb");
-            
+
             // Indexes
             entity.HasIndex(p => p.UserId);
             entity.HasIndex(p => new { p.UserId, p.CapturedAt });
+            entity.HasIndex(p => new { p.UserId, p.UploadedAt }); // For recently added queries
         });
 
         // Album configuration
@@ -207,6 +209,28 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.Ignore(gsc => gsc.IsActive);
+        });
+
+        // FavoritePhoto configuration
+        builder.Entity<FavoritePhoto>(entity =>
+        {
+            entity.HasKey(fp => fp.Id);
+            entity.Property(fp => fp.UserId).IsRequired();
+            entity.Property(fp => fp.CreatedAt).IsRequired();
+
+            // One user per photo (prevent duplicates)
+            entity.HasIndex(fp => new { fp.UserId, fp.PhotoId }).IsUnique();
+            entity.HasIndex(fp => fp.UserId);
+
+            entity.HasOne(fp => fp.Photo)
+                .WithMany()
+                .HasForeignKey(fp => fp.PhotoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(fp => fp.User)
+                .WithMany()
+                .HasForeignKey(fp => fp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

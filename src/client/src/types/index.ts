@@ -7,6 +7,7 @@ export interface Photo {
   capturedAt: string | null
   uploadedAt: string
   thumbnailPath: string
+  isFavorite?: boolean
 }
 
 export interface PhotoDetails extends Photo {
@@ -101,3 +102,12 @@ export interface SharedContent {
 
 // API response types
 export type PhotoListResponse = PaginatedResponse<Photo>
+
+// Photo filter and sort types
+export type PhotoSortOrder = 'uploadedAtDesc' | 'capturedAtDesc' | 'fileNameAsc'
+
+export interface PhotoListFilters {
+  sortBy?: PhotoSortOrder
+  favorites?: boolean
+  search?: string
+}

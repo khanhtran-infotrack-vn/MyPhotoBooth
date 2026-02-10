@@ -12,5 +12,8 @@ public class GetPhotosQueryValidator : AbstractValidator<GetPhotosQuery>
 
         RuleFor(x => x.PageSize)
             .InclusiveBetween(1, 200).WithMessage("PageSize must be between 1 and 200");
+
+        RuleFor(x => x.SortBy)
+            .IsInEnum().WithMessage("Invalid sort order");
     }
 }

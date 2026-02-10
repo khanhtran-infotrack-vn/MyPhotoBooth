@@ -92,4 +92,121 @@ public class PhotoRepository : IPhotoRepository
             await _context.SaveChangesAsync(cancellationToken);
         }
     }
+
+    public async Task<bool> IsFavoriteAsync(Guid photoId, string userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.FavoritePhotos
+            .AnyAsync(fp => fp.PhotoId == photoId && fp.UserId == userId, cancellationToken);
+    }
+
+    public async Task ToggleFavoriteAsync(Guid photoId, string userId, CancellationToken cancellationToken = default)
+    {
+        var existing = await _context.FavoritePhotos
+            .FirstOrDefaultAsync(fp => fp.UserId == userId && fp.PhotoId == photoId, cancellationToken);
+
+        if (existing != null)
+        {
+            _context.FavoritePhotos.Remove(existing);
+        }
+        else
+        {
+            var favorite = new FavoritePhoto
+            {
+                Id = Guid.NewGuid(),
+                PhotoId = photoId,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.FavoritePhotos.Add(favorite);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<Photo>> GetFavoritesAsync(string userId, int skip = 0, int take = 50, CancellationToken cancellationToken = default)
+    {
+        return await _context.FavoritePhotos
+            .Where(fp => fp.UserId == userId)
+            .OrderByDescending(fp => fp.CreatedAt)
+            .Select(fp => fp.Photo)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> GetFavoritesCountAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.FavoritePhotos
+            .CountAsync(fp => fp.UserId == userId, cancellationToken);
+    }
+
+    public async Task<IEnumerable<Photo>> SearchAsync(string userId, string searchTerm, int skip = 0, int take = 50, CancellationToken cancellationToken = default)
+    {
+        var term = searchTerm.ToLowerInvariant();
+
+        // Get photos by tag names
+        var photoIdsByTags = await _context.PhotoTags
+            .Where(pt => pt.Tag.Name.ToLower().Contains(term))
+            .Where(pt => pt.Photo.UserId == userId)
+            .Select(pt => pt.PhotoId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        // Get photos by album names
+        var photoIdsByAlbums = await _context.AlbumPhotos
+            .Where(ap => ap.Album.Name.ToLower().Contains(term))
+            .Where(ap => ap.Album.UserId == userId)
+            .Select(ap => ap.PhotoId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var allMatchingPhotoIds = photoIdsByTags
+            .Concat(photoIdsByAlbums)
+            .ToHashSet();
+
+        // Main query searching by filename, description, and matching tag/album IDs
+        return await _context.Photos
+            .Where(p => p.UserId == userId)
+            .Where(p =>
+                allMatchingPhotoIds.Contains(p.Id) ||
+                p.OriginalFileName.ToLower().Contains(term) ||
+                (p.Description != null && p.Description.ToLower().Contains(term)))
+            .OrderByDescending(p => p.UploadedAt)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> GetSearchCountAsync(string userId, string searchTerm, CancellationToken cancellationToken = default)
+    {
+        var term = searchTerm.ToLowerInvariant();
+
+        // Get photos by tag names
+        var photoIdsByTags = await _context.PhotoTags
+            .Where(pt => pt.Tag.Name.ToLower().Contains(term))
+            .Where(pt => pt.Photo.UserId == userId)
+            .Select(pt => pt.PhotoId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        // Get photos by album names
+        var photoIdsByAlbums = await _context.AlbumPhotos
+            .Where(ap => ap.Album.Name.ToLower().Contains(term))
+            .Where(ap => ap.Album.UserId == userId)
+            .Select(ap => ap.PhotoId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var allMatchingPhotoIds = photoIdsByTags
+            .Concat(photoIdsByAlbums)
+            .ToHashSet();
+
+        return await _context.Photos
+            .Where(p => p.UserId == userId)
+            .Where(p =>
+                allMatchingPhotoIds.Contains(p.Id) ||
+                p.OriginalFileName.ToLower().Contains(term) ||
+                (p.Description != null && p.Description.ToLower().Contains(term)))
+            .CountAsync(cancellationToken);
+    }
 }

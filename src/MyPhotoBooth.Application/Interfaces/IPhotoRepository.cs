@@ -12,4 +12,10 @@ public interface IPhotoRepository
     Task<Photo> AddAsync(Photo photo, CancellationToken cancellationToken = default);
     Task UpdateAsync(Photo photo, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<bool> IsFavoriteAsync(Guid photoId, string userId, CancellationToken cancellationToken = default);
+    Task ToggleFavoriteAsync(Guid photoId, string userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Photo>> GetFavoritesAsync(string userId, int skip = 0, int take = 50, CancellationToken cancellationToken = default);
+    Task<int> GetFavoritesCountAsync(string userId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<Photo>> SearchAsync(string userId, string searchTerm, int skip = 0, int take = 50, CancellationToken cancellationToken = default);
+    Task<int> GetSearchCountAsync(string userId, string searchTerm, CancellationToken cancellationToken = default);
 }
