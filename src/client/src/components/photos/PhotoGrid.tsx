@@ -26,6 +26,9 @@ export function PhotoGrid({
   const { isSelectionMode, selectedIds, toggleSelection, selectMultiple, enterSelectionMode } = useSelectionStore()
   const [hoveredPhotoId, setHoveredPhotoId] = useState<string | null>(null)
 
+  // Track checkbox animations
+  const [triggerCheckboxAnimation, setTriggerCheckboxAnimation] = useState<Set<string>>(new Set())
+
   // Drag selection state
   const [isDragging, setIsDragging] = useState(false)
   const [dragStartPhotoId, setDragStartPhotoId] = useState<string | null>(null)
@@ -207,10 +210,17 @@ export function PhotoGrid({
 
                   return (
                     <div
-                      className={`relative group cursor-pointer overflow-hidden rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 ${
-                        isSelected ? 'ring-4 ring-primary-500 shadow-lg shadow-primary-500/20' : ''
-                      } ${isLongPressed ? 'scale-95' : ''}`}
-                      style={{ width, height }}
+                      className={`relative group cursor-pointer overflow-hidden rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 ease-out ${
+                        isLongPressed ? 'scale-95' : ''
+                      } ${
+                        isHovered ? '-translate-y-1' : 'translate-y-0'
+                      }`}
+                      style={{
+                        width,
+                        height,
+                        transitionProperty: 'transform, box-shadow, opacity',
+                        transitionTimingFunction: isHovered ? 'cubic-bezier(0.34, 1.56, 0.64, 1)' : 'cubic-bezier(0.4, 0, 0.2, 1)',
+                      }}
                       onMouseEnter={() => {
                         if (originalPhoto?.id) {
                           setHoveredPhotoId(originalPhoto.id)
@@ -261,86 +271,149 @@ export function PhotoGrid({
                         src={photo.src}
                         alt={originalPhoto?.originalFileName || 'Photo'}
                         loading="lazy"
-                        className={`w-full h-full object-cover transition-all duration-300 ${
-                          isHovered ? 'scale-105' : 'scale-100'
+                        className={`w-full h-full object-cover ${
+                          isHovered
+                            ? 'scale-105 transition-transform duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)'
+                            : 'scale-100 transition-transform duration-700 cubic-bezier(0.4, 0, 0.2, 1)'
                         }`}
                         style={{ width, height, objectFit: 'cover' } as React.CSSProperties}
                       />
 
-                      {/* Gradient overlay on hover */}
-                      <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity duration-300 ${
-                        isHovered ? 'opacity-100' : 'opacity-0'
-                      }`} />
+                      {/* Gradient overlay on hover - enhanced transition */}
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent ${
+                          isHovered
+                            ? 'opacity-100 transition-opacity duration-500 ease-out'
+                            : 'opacity-0 transition-opacity duration-300 ease-in'
+                        }`}
+                      />
 
                       {/* Long press ripple effect */}
                       {isLongPressed && (
                         <div className="absolute inset-0 bg-primary-500/30 animate-pulse" />
                       )}
 
-                      {/* Selection tint */}
-                      {isSelected && (
-                        <div className="absolute inset-0 bg-primary-500/20 backdrop-blur-[1px]" />
-                      )}
-
-                      {/* Favorite indicator */}
+                      {/* Favorite indicator - enhanced transition */}
                       {isFavorite && (
                         <div className="absolute top-3 right-3 z-10">
-                          <div className="w-7 h-7 rounded-lg bg-white/90 backdrop-blur-md shadow-lg flex items-center justify-center">
-                            <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                          <div className="w-7 h-7 rounded-lg bg-white/90 backdrop-blur-md shadow-lg flex items-center justify-center transition-all duration-300 ease-out hover:scale-110 hover:bg-white">
+                            <svg className="w-4 h-4 text-red-500 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                             </svg>
                           </div>
                         </div>
                       )}
 
-                      {/* Selection checkbox */}
+                      {/* Selection checkbox - enhanced with premium transitions */}
                       <div
-                        className={`absolute top-3 left-3 transition-all duration-200 z-10 ${
-                          isSelectionMode || isSelected ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'
-                        }`}
+                        className={`absolute top-3 left-3 z-10 ${
+                          isSelected || isHovered
+                            ? 'opacity-100 scale-100'
+                            : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'
+                        } transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1)`}
                       >
                         <button
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            if (originalPhoto) toggleSelection(originalPhoto.id)
+                            if (originalPhoto) {
+                              toggleSelection(originalPhoto.id)
+                              // Trigger bounce animation on select
+                              if (!isSelected) {
+                                setTriggerCheckboxAnimation(prev => new Set(prev).add(originalPhoto.id))
+                                setTimeout(() => {
+                                  setTriggerCheckboxAnimation(prev => {
+                                    const next = new Set(prev)
+                                    next.delete(originalPhoto.id)
+                                    return next
+                                  })
+                                }, 400)
+                              }
+                            }
                           }}
                           onMouseDown={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
                           }}
-                          className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-md ${
+                          className={`relative w-7 h-7 rounded-xl border-2 flex items-center justify-center shadow-lg backdrop-blur-md overflow-hidden transition-all duration-300 ${
                             isSelected
-                              ? 'bg-primary-600 border-primary-600 text-white'
-                              : 'bg-white/80 border-gray-300 hover:border-primary-500'
+                              ? 'bg-primary-600 border-primary-600 text-white shadow-primary-500/40'
+                              : 'bg-white/80 border-gray-300 hover:border-primary-500 hover:shadow-xl hover:bg-white/90'
+                          } ${
+                            triggerCheckboxAnimation.has(originalPhoto?.id || '')
+                              ? 'animate-checkbox-bounce'
+                              : ''
                           }`}
+                          style={{
+                            transitionTimingFunction: isSelected
+                              ? 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+                              : 'cubic-bezier(0.4, 0, 0.2, 1)',
+                          }}
                           aria-label={isSelected ? 'Deselect photo' : 'Select photo'}
                         >
+                          {/* Ripple effect on select */}
+                          {isSelected && triggerCheckboxAnimation.has(originalPhoto?.id || '') && (
+                            <span className="absolute inset-0 bg-white/30 animate-ripple rounded-xl" />
+                          )}
+
+                          {/* Checkmark with draw animation - always visible when selected */}
                           {isSelected && (
-                            <svg className="w-4 h-4 animate-scale-in" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={3}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              style={{
+                                strokeDasharray: 24,
+                                strokeDashoffset: triggerCheckboxAnimation.has(originalPhoto?.id || '') ? 0 : 0,
+                                animation: triggerCheckboxAnimation.has(originalPhoto?.id || '')
+                                  ? 'checkmarkDraw 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+                                  : 'none',
+                              }}
+                            >
+                              <path d="M5 13l4 4L19 7" />
                             </svg>
                           )}
                         </button>
                       </div>
 
-                      {/* Photo info overlay on hover */}
-                      <div className={`absolute bottom-0 left-0 right-0 p-3 text-white transition-all duration-300 ${
-                        isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-                      }`}>
+                      {/* Photo info overlay on hover - enhanced transition */}
+                      <div
+                        className={`absolute bottom-0 left-0 right-0 p-3 text-white ${
+                          isHovered
+                            ? 'opacity-100 translate-y-0 transition-all duration-300 ease-out'
+                            : 'opacity-0 translate-y-2 transition-all duration-200 ease-in'
+                        }`}
+                        style={{
+                          transitionTimingFunction: isHovered
+                            ? 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+                            : 'cubic-bezier(0.4, 0, 1, 1)',
+                        }}
+                      >
                         <p className="text-sm font-medium truncate drop-shadow-lg">
                           {originalPhoto?.originalFileName}
                         </p>
                       </div>
 
-                      {/* Shine effect on hover */}
-                      <div className={`absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 transition-opacity duration-300 pointer-events-none ${
-                        isHovered ? 'opacity-100' : 'opacity-0'
-                      }`} style={{
-                        background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.2) 50%, transparent 55%)',
-                        backgroundSize: '200% 100%',
-                        backgroundPosition: isHovered ? '100% 0' : '-100% 0',
-                      }} />
+                      {/* Shine effect on hover - enhanced with smooth animation */}
+                      <div
+                        className={`absolute inset-0 pointer-events-none ${
+                          isHovered
+                            ? 'opacity-100 transition-opacity duration-300 ease-out'
+                            : 'opacity-0 transition-opacity duration-500 ease-in'
+                        }`}
+                        style={{
+                          background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 45%, rgba(255,255,255,0.25) 50%, transparent 55%)',
+                          backgroundSize: '200% 100%',
+                          backgroundPosition: isHovered ? '100% 0' : '-100% 0',
+                          transition: isHovered
+                            ? 'background-position 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out'
+                            : 'background-position 0s linear, opacity 0.5s ease-in',
+                        }}
+                      />
                     </div>
                   )
                 },

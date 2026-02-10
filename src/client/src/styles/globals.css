@@ -800,6 +800,44 @@
     animation: bounceIn var(--duration-slow) var(--ease-out);
   }
 
+  /* Premium checkbox animations */
+  .animate-checkbox-spring {
+    animation: checkboxSpring 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .animate-checkbox-slide {
+    animation: checkboxSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .animate-checkbox-bounce {
+    animation: checkboxBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .animate-checkmark-draw {
+    animation: checkmarkDraw 0.3s ease-out forwards;
+  }
+
+  .animate-ripple {
+    animation: ripple 0.6s ease-out forwards;
+  }
+
+  .animate-ring-pulse {
+    animation: ringPulse 0.6s ease-out;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-checkbox-spring,
+    .animate-checkbox-slide,
+    .animate-checkbox-bounce,
+    .animate-checkmark-draw,
+    .animate-ripple,
+    .animate-ring-pulse {
+      animation: none;
+      transition: opacity 0.2s ease;
+    }
+  }
+
   /* Animation keyframes */
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -864,6 +902,110 @@
     100% {
       opacity: 1;
       transform: scale(1);
+    }
+  }
+
+  /* Checkbox spring animation */
+  @keyframes checkboxSpring {
+    0% {
+      transform: scale(0.8) rotate(-15deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.1) rotate(5deg);
+    }
+    75% {
+      transform: scale(0.95) rotate(-2deg);
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  /* Checkbox select bounce */
+  @keyframes checkboxBounce {
+    0% {
+      transform: scale(1);
+    }
+    30% {
+      transform: scale(1.25);
+    }
+    50% {
+      transform: scale(0.9);
+    }
+    70% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Checkbox slide-in from corner */
+  @keyframes checkboxSlideIn {
+    0% {
+      transform: translate(-8px, -8px) scale(0.6);
+      opacity: 0;
+    }
+    60% {
+      transform: translate(0, 0) scale(1.05);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Checkmark draw animation */
+  @keyframes checkmarkDraw {
+    0% {
+      stroke-dashoffset: 24;
+      opacity: 0;
+    }
+    50% {
+      stroke-dashoffset: 12;
+      opacity: 1;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 1;
+    }
+  }
+
+  /* Ripple effect */
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  /* Photo lift effect */
+  @keyframes photoLift {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      transform: translateY(-4px) scale(1.02);
+    }
+  }
+
+  /* Selection ring pulse */
+  @keyframes ringPulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 8px rgba(66, 133, 244, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(66, 133, 244, 0);
     }
   }
 
