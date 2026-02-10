@@ -1,6 +1,17 @@
 import { create } from 'zustand';
 import api from '../lib/api';
 
+// Helper to get user from localStorage
+const getStoredUser = (): User | null => {
+  const userJson = localStorage.getItem('user');
+  if (!userJson) return null;
+  try {
+    return JSON.parse(userJson);
+  } catch {
+    return null;
+  }
+};
+
 interface User {
   email: string;
   displayName?: string;
@@ -17,13 +28,15 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: !!localStorage.getItem('accessToken'),
-  user: null,
+  user: getStoredUser(),
 
   login: async (email: string, password: string) => {
     const { data } = await api.post('/auth/login', { email, password });
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
-    set({ isAuthenticated: true, user: { email, displayName: data.displayName } });
+    const user = { email, displayName: data.displayName };
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ isAuthenticated: true, user });
   },
 
   register: async (email: string, password: string, confirmPassword: string, displayName: string) => {
@@ -41,6 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     set({ isAuthenticated: false, user: null });
   },
 
