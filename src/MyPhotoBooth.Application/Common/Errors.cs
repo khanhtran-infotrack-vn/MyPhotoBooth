@@ -19,6 +19,9 @@ public static class Errors
         public const string FileTooLarge = "File size exceeds limit";
         public const string NoFileUploaded = "No file uploaded";
         public const string StorageError = "Failed to store file";
+        public const string PhotoIdsRequired = "At least one photo ID is required";
+        public const string BulkOperationLimit = "Cannot process more than 100 photos at once";
+        public const string DownloadLimit = "Cannot download more than 50 photos at once";
     }
 
     public static class Albums

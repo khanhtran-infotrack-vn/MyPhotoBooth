@@ -1,10 +1,15 @@
 import { useState, useMemo } from 'react'
 import { PhotoGrid, SelectionBar } from '../../components/photos'
 import { Lightbox } from '../../components/lightbox'
+import { BulkActionsBar } from '../../components/bulk'
+import { Slideshow } from '../../components/slideshow'
 import { usePhotos, getAllPhotosFromPages } from '../../hooks/usePhotos'
 import { useFavorites, getAllFavoritesFromPages } from '../../hooks/useFavorites'
 import { usePhotoSearch } from '../../hooks/usePhotoSearch'
+import { useAlbums } from '../../hooks/useAlbums'
 import { ShareModal } from '../sharing/ShareModal'
+import { useSelectionStore } from '../../stores/selectionStore'
+import { useBulkOperations } from '../../hooks/useBulkOperations'
 import type { Photo } from '../../types'
 
 type FilterType = 'all' | 'favorites' | 'recent' | 'search'
@@ -13,8 +18,14 @@ export default function PhotoGallery() {
  const [filterType, setFilterType] = useState<FilterType>('all')
  const [lightboxOpen, setLightboxOpen] = useState(false)
  const [lightboxIndex, setLightboxIndex] = useState(0)
+ const [slideshowOpen, setSlideshowOpen] = useState(false)
+ const [slideshowIndex, setSlideshowIndex] = useState(0)
  const [sharePhoto, setSharePhoto] = useState<Photo | null>(null)
  const [searchQuery, setSearchQuery] = useState('')
+ const [showAlbumSelect, setShowAlbumSelect] = useState(false)
+
+ const { isSelectionMode, clearSelection } = useSelectionStore()
+ const { bulkAddToAlbum } = useBulkOperations()
 
  // All photos query
  const {
@@ -36,6 +47,9 @@ export default function PhotoGallery() {
 
  // Search query (server-side)
  const { data: searchData, isLoading: isSearching } = usePhotoSearch(searchQuery)
+
+ // Albums query (for bulk add to album)
+ const { data: albums } = useAlbums()
 
  // Flatten all pages into a single array based on filter type
  const allPhotos = useMemo(
@@ -113,7 +127,7 @@ export default function PhotoGallery() {
   searchData,
  ])
 
- const handlePhotoClick = (photo: Photo, index: number) => {
+ const handlePhotoClick = (_photo: Photo, index: number) => {
   setLightboxIndex(index)
   setLightboxOpen(true)
  }
@@ -138,7 +152,36 @@ export default function PhotoGallery() {
   }
  }
 
- // Removed - now calculated in useMemo
+ const handleStartSlideshow = () => {
+  setSlideshowIndex(lightboxIndex)
+  setSlideshowOpen(true)
+  setLightboxOpen(false)
+ }
+
+ const handleAddToAlbum = async (albumId: string) => {
+  const selectedIds = Array.from(useSelectionStore.getState().selectedIds)
+  await bulkAddToAlbum({ photoIds: selectedIds, albumId })
+  setShowAlbumSelect(false)
+  clearSelection()
+ }
+
+ // Slideshow button in toolbar
+ const SlideshowButton = () => (
+  <button
+   onClick={() => {
+    setSlideshowIndex(0)
+    setSlideshowOpen(true)
+   }}
+   disabled={photos.length === 0}
+   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-primary-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+   <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+   </svg>
+   <span className="text-sm font-medium text-gray-700">Slideshow</span>
+  </button>
+ )
 
  return (
   <div className="min-h-screen">
@@ -161,36 +204,39 @@ export default function PhotoGallery() {
        )}
       </div>
 
-      {/* Search Bar */}
-      <div className="w-full sm:w-72 lg:w-80">
-       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-         <svg className="w-4.5 h-4.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-         </svg>
-        </div>
-        <input
-         type="text"
-         value={searchQuery}
-         onChange={(e) => handleSearchChange(e.target.value)}
-         placeholder="Search photos by name, description, tags..."
-         className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200 shadow-sm"
-        />
-        {searchQuery && (
-         <button
-          onClick={() => handleSearchChange('')}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      {/* Toolbar with Search and Slideshow */}
+      <div className="flex items-center gap-3">
+       <SlideshowButton />
+       <div className="w-full sm:w-72 lg:w-80">
+        <div className="relative">
+         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+          <svg className="w-4.5 h-4.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-         </button>
-        )}
-        {isSearching && (
-         <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-          <div className="w-4 h-4 border-2 border-gray-400 border-t-primary-600 rounded-full animate-spin" />
          </div>
-        )}
+         <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          placeholder="Search photos by name, description, tags..."
+          className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200 shadow-sm"
+         />
+         {searchQuery && (
+          <button
+           onClick={() => handleSearchChange('')}
+           className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+          >
+           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+           </svg>
+          </button>
+         )}
+         {isSearching && (
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+           <div className="w-4 h-4 border-2 border-gray-400 border-t-primary-600 rounded-full animate-spin" />
+          </div>
+         )}
+        </div>
        </div>
       </div>
      </div>
@@ -315,8 +361,41 @@ export default function PhotoGallery() {
     )}
    </div>
 
+   {/* Bulk Actions Bar */}
+   {isSelectionMode && <BulkActionsBar onOpenAlbumSelect={() => setShowAlbumSelect(true)} />}
+
    {/* Selection bar */}
    <SelectionBar />
+
+   {/* Album Select Modal */}
+   {showAlbumSelect && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+     <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+      <h3 className="text-xl font-bold text-gray-900 mb-4">Add to Album</h3>
+      {albums && albums.length > 0 ? (
+       <div className="space-y-2 max-h-96 overflow-y-auto">
+        {albums.map((album) => (
+         <button
+          key={album.id}
+          onClick={() => handleAddToAlbum(album.id)}
+          className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors"
+         >
+          {album.name}
+         </button>
+        ))}
+       </div>
+      ) : (
+       <p className="text-gray-500">No albums available. Create an album first.</p>
+      )}
+      <button
+       onClick={() => setShowAlbumSelect(false)}
+       className="mt-4 w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+      >
+       Cancel
+      </button>
+     </div>
+    </div>
+   )}
 
    {/* Lightbox */}
    {lightboxOpen && photos.length > 0 && (
@@ -327,6 +406,17 @@ export default function PhotoGallery() {
      onShare={(photo) => {
       setSharePhoto(photo)
      }}
+     onStartSlideshow={handleStartSlideshow}
+    />
+   )}
+
+   {/* Slideshow */}
+   {slideshowOpen && photos.length > 0 && (
+    <Slideshow
+     photos={photos}
+     initialIndex={slideshowIndex}
+     onClose={() => setSlideshowOpen(false)}
+     autoStart={true}
     />
    )}
 

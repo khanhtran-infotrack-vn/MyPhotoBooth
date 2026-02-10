@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAlbum, useDeleteAlbum } from '../../hooks/useAlbums'
 import { PhotoGrid } from '../../components/photos'
 import { Lightbox } from '../../components/lightbox'
+import { Slideshow } from '../../components/slideshow'
 import { ShareModal } from '../sharing/ShareModal'
 import type { Photo } from '../../types'
 
@@ -11,6 +12,8 @@ export default function AlbumDetail() {
  const navigate = useNavigate()
  const [lightboxOpen, setLightboxOpen] = useState(false)
  const [lightboxIndex, setLightboxIndex] = useState(0)
+ const [slideshowOpen, setSlideshowOpen] = useState(false)
+ const [slideshowIndex, setSlideshowIndex] = useState(0)
  const [showShareAlbum, setShowShareAlbum] = useState(false)
  const [sharePhoto, setSharePhoto] = useState<Photo | null>(null)
 
@@ -22,6 +25,12 @@ export default function AlbumDetail() {
  const handlePhotoClick = (_photo: Photo, index: number) => {
   setLightboxIndex(index)
   setLightboxOpen(true)
+ }
+
+ const handleStartSlideshow = () => {
+  setSlideshowIndex(lightboxIndex)
+  setSlideshowOpen(true)
+  setLightboxOpen(false)
  }
 
  const handleDeleteAlbum = async () => {
@@ -129,6 +138,17 @@ export default function AlbumDetail() {
      initialIndex={lightboxIndex}
      onClose={() => setLightboxOpen(false)}
      onShare={(photo) => setSharePhoto(photo)}
+     onStartSlideshow={handleStartSlideshow}
+    />
+   )}
+
+   {/* Slideshow */}
+   {slideshowOpen && photos.length > 0 && (
+    <Slideshow
+     photos={photos}
+     initialIndex={slideshowIndex}
+     onClose={() => setSlideshowOpen(false)}
+     autoStart={true}
     />
    )}
 

@@ -223,4 +223,61 @@ public class PhotoRepository : IPhotoRepository
                 (p.Description != null && p.Description.ToLower().Contains(term)))
             .CountAsync(cancellationToken);
     }
+
+    // Bulk operations
+
+    public async Task<List<Photo>> GetByIdsAsync(List<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        return await _context.Photos
+            .Where(p => ids.Contains(p.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Photo>> GetByIdsAsync(List<Guid> ids, string userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Photos
+            .Where(p => ids.Contains(p.Id) && p.UserId == userId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task DeleteMultipleAsync(List<Guid> ids, string userId, CancellationToken cancellationToken = default)
+    {
+        var photos = await _context.Photos
+            .Where(p => ids.Contains(p.Id) && p.UserId == userId)
+            .ToListAsync(cancellationToken);
+
+        _context.Photos.RemoveRange(photos);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AddToFavoritesAsync(List<Guid> photoIds, string userId, CancellationToken cancellationToken = default)
+    {
+        var existingFavoriteIds = await _context.FavoritePhotos
+            .Where(fp => fp.UserId == userId && photoIds.Contains(fp.PhotoId))
+            .Select(fp => fp.PhotoId)
+            .ToListAsync(cancellationToken);
+
+        var newPhotoIds = photoIds.Except(existingFavoriteIds).ToList();
+
+        var favorites = newPhotoIds.Select(photoId => new FavoritePhoto
+        {
+            Id = Guid.NewGuid(),
+            PhotoId = photoId,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _context.FavoritePhotos.AddRangeAsync(favorites, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RemoveFromFavoritesAsync(List<Guid> photoIds, string userId, CancellationToken cancellationToken = default)
+    {
+        var favorites = await _context.FavoritePhotos
+            .Where(fp => fp.UserId == userId && photoIds.Contains(fp.PhotoId))
+            .ToListAsync(cancellationToken);
+
+        _context.FavoritePhotos.RemoveRange(favorites);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

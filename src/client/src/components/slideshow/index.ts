@@ -1,0 +1,5 @@
+export { Slideshow } from './Slideshow'
+export { SlideshowControls } from './SlideshowControls'
+export { SlideshowProgress } from './SlideshowProgress'
+export { SlideshowSettings } from './SlideshowSettings'
+export { KenBurnsEffect } from './KenBurnsEffect'

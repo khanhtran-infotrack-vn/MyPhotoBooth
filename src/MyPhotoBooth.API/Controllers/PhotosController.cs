@@ -2,11 +2,14 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using MyPhotoBooth.API.Common;
 using MyPhotoBooth.Application.Common.DTOs;
 using MyPhotoBooth.Application.Features.Photos.Commands;
 using MyPhotoBooth.Application.Features.Photos.Queries;
+using MyPhotoBooth.Application.Features.Tags.Commands;
 
 namespace MyPhotoBooth.API.Controllers;
 
@@ -108,6 +111,14 @@ public class PhotosController : ControllerBase
         return result.ToHttpResponse();
     }
 
+    [HttpPost("{id}/tags")]
+    public async Task<IActionResult> AddTagsToPhoto(Guid id, [FromBody] List<Guid> tagIds, CancellationToken cancellationToken)
+    {
+        var command = new AddTagsToPhotoCommand(id, tagIds, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
     [HttpGet("favorites")]
     public async Task<IActionResult> GetFavorites([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
@@ -121,6 +132,58 @@ public class PhotosController : ControllerBase
     {
         var query = new SearchPhotosQuery(q, GetUserId(), page, pageSize);
         var result = await _mediator.Send(query, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
+    // Bulk Operations
+
+    [HttpPost("bulk/delete")]
+    public async Task<IActionResult> BulkDeletePhotos([FromBody] BulkOperationRequestDto request, CancellationToken cancellationToken)
+    {
+        var command = new BulkDeletePhotosCommand(request.PhotoIds, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
+    [HttpPost("bulk/favorite")]
+    public async Task<IActionResult> BulkToggleFavoritePhotos([FromBody] BulkToggleFavoriteRequestDto request, CancellationToken cancellationToken)
+    {
+        var command = new BulkToggleFavoritePhotosCommand(request.PhotoIds, GetUserId(), request.Favorite);
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
+    [HttpPost("bulk/add-to-album")]
+    public async Task<IActionResult> BulkAddPhotosToAlbum([FromBody] BulkAlbumOperationRequestDto request, CancellationToken cancellationToken)
+    {
+        var command = new BulkAddPhotosToAlbumCommand(request.PhotoIds, request.AlbumId, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
+    [HttpPost("bulk/remove-from-album")]
+    public async Task<IActionResult> BulkRemovePhotosFromAlbum([FromBody] BulkAlbumOperationRequestDto request, CancellationToken cancellationToken)
+    {
+        var command = new BulkRemovePhotosFromAlbumCommand(request.PhotoIds, request.AlbumId, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
+    [HttpGet("bulk/download")]
+    public async Task<IActionResult> BulkDownloadPhotos([FromQuery] string photoIds, CancellationToken cancellationToken)
+    {
+        var ids = photoIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(Guid.Parse)
+            .ToList();
+
+        var query = new BulkDownloadPhotosQuery(ids, GetUserId());
+        var result = await _mediator.Send(query, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return File(result.Value.FileContents, result.Value.ContentType, result.Value.FileName);
+        }
+
         return result.ToHttpResponse();
     }
 }

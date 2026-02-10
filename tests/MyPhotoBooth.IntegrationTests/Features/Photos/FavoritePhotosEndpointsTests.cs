@@ -248,15 +248,15 @@ public class FavoritePhotosEndpointsTests
         // First user
         var email1 = $"fav-user1-{Guid.NewGuid()}@example.com";
         var token1 = await RegisterAndLoginAsync(client, email1, "TestPassword123", "User 1");
-        var photoId1 = await UploadTestPhotoAsync(client, "user1-photo.jpg");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token1);
+        var photoId1 = await UploadTestPhotoAsync(client, "user1-photo.jpg");
         await client.PostAsync($"/api/photos/{photoId1}/favorite", null);
 
         // Second user
         var email2 = $"fav-user2-{Guid.NewGuid()}@example.com";
         var token2 = await RegisterAndLoginAsync(client, email2, "TestPassword123", "User 2");
-        var photoId2 = await UploadTestPhotoAsync(client, "user2-photo.jpg");
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token2);
+        var photoId2 = await UploadTestPhotoAsync(client, "user2-photo.jpg");
         await client.PostAsync($"/api/photos/{photoId2}/favorite", null);
 
         // Act - get favorites for first user

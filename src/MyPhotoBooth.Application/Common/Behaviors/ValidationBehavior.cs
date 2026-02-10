@@ -2,6 +2,7 @@ using CSharpFunctionalExtensions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using System.Reflection;
 
 namespace MyPhotoBooth.Application.Common.Behaviors;
 
@@ -66,12 +67,28 @@ public class ValidationBehavior<TRequest, TResponse>
 
         if (underlyingType != null)
         {
-            // Result<T>
-            var failureMethod = resultType.GetMethod("Failure", new[] { typeof(string) });
+            // Result<T> - Look for the generic Failure method on the non-generic Result class
+            // The pattern is: Result.Failure<T>(string)
+            var resultClass = typeof(Result);
+            var failureMethods = resultClass.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                .Where(m => m.Name == "Failure" && m.IsGenericMethod && m.GetGenericArguments().Length == 1)
+                .ToList();
+
+            var failureMethod = failureMethods.FirstOrDefault(m =>
+            {
+                var parameters = m.GetParameters();
+                return parameters.Length == 1 && parameters[0].ParameterType == typeof(string);
+            });
+
             if (failureMethod != null)
             {
-                return (TResponse)failureMethod.Invoke(null, new object[] { errorMessage })!;
+                var closedMethod = failureMethod.MakeGenericMethod(underlyingType);
+                return (TResponse)closedMethod.Invoke(null, new object[] { errorMessage })!;
             }
+
+            // Last resort: Throw if we can't find the method
+            _logger.LogError("Could not find Failure method on Result type for {ResponseType}. Validation errors: {Errors}",
+                typeof(TResponse).Name, errorMessage);
         }
         else if (resultType == typeof(Result))
         {

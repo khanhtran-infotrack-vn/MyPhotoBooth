@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useGroup, useGroupMembers, useLeaveGroup, useRemoveGroupMember, type Group } from '../../hooks/useGroups'
+import { useGroup, useGroupMembers, useLeaveGroup, useRemoveGroupMember } from '../../hooks/useGroups'
 import { AddMemberModal } from './AddMemberModal'
 
 export default function GroupDetail() {
@@ -74,7 +74,7 @@ export default function GroupDetail() {
               <p className="text-gray-600 mt-2">{group.description}</p>
             )}
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-              <span>{group.memberCount} members</span>
+              <span>{group.members.length} members</span>
               <span>Created {new Date(group.createdAt).toLocaleDateString()}</span>
               {group.isDeletionScheduled && (
                 <span className="text-red-600">
