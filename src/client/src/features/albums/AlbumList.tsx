@@ -16,12 +16,12 @@ export default function AlbumList() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-[1800px] mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Albums</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">Albums</h1>
+          <p className="text-sm text-gray-600 dark:text-dark-text-secondary mt-2 text-lg">
             {albums?.length || 0} {albums?.length === 1 ? 'album' : 'albums'}
           </p>
         </div>
@@ -35,24 +35,26 @@ export default function AlbumList() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex items-center gap-3 text-gray-500">
-            <div className="w-6 h-6 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin" />
-            <span>Loading albums...</span>
+        <div className="flex items-center justify-center py-32">
+          <div className="flex flex-col items-center gap-4 text-gray-600 dark:text-dark-text-secondary">
+            <div className="w-12 h-12 border-3 border-gray-300 border-t-primary-600 dark:border-t-primary-500 rounded-full animate-spin" />
+            <span className="text-lg font-medium">Loading albums...</span>
           </div>
         </div>
       )}
 
       {/* Empty state */}
       {!isLoading && albums?.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-          <svg className="w-20 h-20 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
-              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-            />
-          </svg>
-          <h3 className="text-xl font-semibold text-gray-700">No albums yet</h3>
-          <p className="mt-2">Create your first album to organize your photos</p>
+        <div className="flex flex-col items-center justify-center py-32 text-gray-600 dark:text-dark-text-secondary">
+          <div className="w-28 h-28 mb-8 rounded-3xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-bg-tertiary dark:to-dark-border-default flex items-center justify-center shadow-xl dark:shadow-primary-600/10 float">
+            <svg className="w-14 h-14 text-gray-400 dark:text-dark-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+          </div>
+          <h3 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-3">No albums yet</h3>
+          <p className="text-gray-600 dark:text-dark-text-secondary text-lg">Create your first album to organize your photos</p>
           <button onClick={() => setShowCreateModal(true)} className="btn-primary mt-4">
             Create Album
           </button>

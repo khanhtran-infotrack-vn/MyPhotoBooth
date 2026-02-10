@@ -104,7 +104,7 @@ export function Lightbox({ photos, initialIndex, onClose, onShare }: LightboxPro
   if (!currentPhoto) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div className="fixed inset-0 z-50 bg-black dark:bg-black">
       {/* Main content area */}
       <div className="relative w-full h-full flex items-center justify-center">
         {/* Background click to close */}
@@ -117,16 +117,17 @@ export function Lightbox({ photos, initialIndex, onClose, onShare }: LightboxPro
         >
           {loading ? (
             <div className="flex items-center justify-center w-64 h-64">
-              <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+              <div className="w-12 h-12 border-4 border-white/10 border-t-white rounded-full animate-spin shadow-lg shadow-white/20" />
             </div>
           ) : imageUrl ? (
             <img
               src={imageUrl}
               alt={currentPhoto.originalFileName}
-              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl dark:shadow-black/50"
+              style={{ filter: 'drop-shadow(0 25px 50px rgba(0,0,0,0.5))' }}
             />
           ) : (
-            <div className="flex items-center justify-center w-64 h-64 text-white">
+            <div className="flex items-center justify-center w-64 h-64 text-white/80">
               Failed to load image
             </div>
           )}
@@ -142,9 +143,11 @@ export function Lightbox({ photos, initialIndex, onClose, onShare }: LightboxPro
       </div>
 
       {/* Top bar with actions */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
-        <div className="text-white text-sm">
-          {currentIndex + 1} / {photos.length}
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-6 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+        <div className="glass-strong rounded-full px-4 py-2">
+          <span className="text-white text-sm font-medium">
+            {currentIndex + 1} / {photos.length}
+          </span>
         </div>
 
         <LightboxActions
@@ -157,15 +160,17 @@ export function Lightbox({ photos, initialIndex, onClose, onShare }: LightboxPro
       </div>
 
       {/* Bottom bar with filename and date */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/50 to-transparent">
-        <div className="text-center text-white">
-          <p className="font-medium">{currentPhoto.originalFileName}</p>
-          <p className="text-sm text-white/70">
-            {new Date(currentPhoto.capturedAt || currentPhoto.uploadedAt).toLocaleDateString(
-              undefined,
-              { year: 'numeric', month: 'long', day: 'numeric' }
-            )}
-          </p>
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+        <div className="glass-strong rounded-2xl px-6 py-4 max-w-2xl mx-auto">
+          <div className="text-center text-white">
+            <p className="font-semibold text-lg">{currentPhoto.originalFileName}</p>
+            <p className="text-sm text-white/70 mt-1">
+              {new Date(currentPhoto.capturedAt || currentPhoto.uploadedAt).toLocaleDateString(
+                undefined,
+                { year: 'numeric', month: 'long', day: 'numeric' }
+              )}
+            </p>
+          </div>
         </div>
       </div>
 

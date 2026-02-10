@@ -1,11 +1,11 @@
-using System.Security.Claims;
-using System.Security.Cryptography;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using MyPhotoBooth.API.Common;
 using MyPhotoBooth.Application.Common.DTOs;
-using MyPhotoBooth.Application.Interfaces;
-using MyPhotoBooth.Domain.Entities;
+using MyPhotoBooth.Application.Features.ShareLinks.Commands;
+using MyPhotoBooth.Application.Features.ShareLinks.Queries;
+using System.Security.Claims;
 
 namespace MyPhotoBooth.API.Controllers;
 
@@ -14,140 +14,71 @@ namespace MyPhotoBooth.API.Controllers;
 [Route("api/[controller]")]
 public class ShareLinksController : ControllerBase
 {
-    private readonly IShareLinkRepository _shareLinkRepository;
-    private readonly IPhotoRepository _photoRepository;
-    private readonly IAlbumRepository _albumRepository;
-    private readonly IPasswordHasher<object> _passwordHasher;
+    private readonly ISender _sender;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public ShareLinksController(
-        IShareLinkRepository shareLinkRepository,
-        IPhotoRepository photoRepository,
-        IAlbumRepository albumRepository)
+    public ShareLinksController(ISender sender, IHttpContextAccessor httpContextAccessor)
     {
-        _shareLinkRepository = shareLinkRepository;
-        _photoRepository = photoRepository;
-        _albumRepository = albumRepository;
-        _passwordHasher = new PasswordHasher<object>();
+        _sender = sender;
+        _httpContextAccessor = httpContextAccessor;
     }
 
-    private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)
-        ?? throw new UnauthorizedAccessException("User ID not found");
-
-    private static string GenerateToken()
+    private string GetUserId()
     {
-        var bytes = RandomNumberGenerator.GetBytes(32);
-        return Convert.ToBase64String(bytes)
-            .Replace("+", "-")
-            .Replace("/", "_")
-            .TrimEnd('=');
+        return User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new UnauthorizedAccessException("User ID not found in token");
     }
 
     [HttpPost]
     public async Task<IActionResult> CreateShareLink([FromBody] CreateShareLinkRequest request, CancellationToken cancellationToken)
     {
         var userId = GetUserId();
+        var scheme = _httpContextAccessor.HttpContext?.Request.Scheme ?? "https";
+        var host = _httpContextAccessor.HttpContext?.Request.Host.Value ?? "localhost";
+        var baseUrl = $"{scheme}://{host}";
 
-        // Validate ownership
-        if (request.Type == ShareLinkType.Photo)
-        {
-            if (!request.PhotoId.HasValue)
-                return BadRequest(new { message = "PhotoId is required for photo shares" });
+        var command = new CreateShareLinkCommand(
+            request.Type,
+            request.PhotoId,
+            request.AlbumId,
+            request.ExpiresAt,
+            request.AllowDownload,
+            request.Password,
+            userId,
+            baseUrl
+        );
 
-            var photo = await _photoRepository.GetByIdAsync(request.PhotoId.Value, cancellationToken);
-            if (photo == null) return NotFound(new { message = "Photo not found" });
-            if (photo.UserId != userId) return Forbid();
-        }
-        else if (request.Type == ShareLinkType.Album)
-        {
-            if (!request.AlbumId.HasValue)
-                return BadRequest(new { message = "AlbumId is required for album shares" });
+        var result = await _sender.Send(command, cancellationToken);
 
-            var album = await _albumRepository.GetByIdAsync(request.AlbumId.Value, cancellationToken);
-            if (album == null) return NotFound(new { message = "Album not found" });
-            if (album.UserId != userId) return Forbid();
-        }
-
-        var shareLink = new ShareLink
-        {
-            Id = Guid.NewGuid(),
-            Token = GenerateToken(),
-            UserId = userId,
-            Type = request.Type,
-            PhotoId = request.Type == ShareLinkType.Photo ? request.PhotoId : null,
-            AlbumId = request.Type == ShareLinkType.Album ? request.AlbumId : null,
-            ExpiresAt = request.ExpiresAt?.ToUniversalTime(),
-            AllowDownload = request.AllowDownload,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        if (!string.IsNullOrWhiteSpace(request.Password))
-        {
-            shareLink.PasswordHash = _passwordHasher.HashPassword(new object(), request.Password);
-        }
-
-        await _shareLinkRepository.AddAsync(shareLink, cancellationToken);
-
-        var baseUrl = $"{Request.Scheme}://{Request.Host}";
-
-        return Ok(new ShareLinkResponse
-        {
-            Id = shareLink.Id,
-            Token = shareLink.Token,
-            Type = shareLink.Type,
-            PhotoId = shareLink.PhotoId,
-            AlbumId = shareLink.AlbumId,
-            HasPassword = shareLink.PasswordHash != null,
-            ExpiresAt = shareLink.ExpiresAt,
-            AllowDownload = shareLink.AllowDownload,
-            ShareUrl = $"{baseUrl}/shared/{shareLink.Token}",
-            IsActive = shareLink.IsActive,
-            CreatedAt = shareLink.CreatedAt
-        });
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { message = result.Error });
     }
 
     [HttpGet]
     public async Task<IActionResult> ListShareLinks(CancellationToken cancellationToken)
     {
         var userId = GetUserId();
-        var shareLinks = await _shareLinkRepository.GetByUserIdAsync(userId, cancellationToken);
+        var scheme = _httpContextAccessor.HttpContext?.Request.Scheme ?? "https";
+        var host = _httpContextAccessor.HttpContext?.Request.Host.Value ?? "localhost";
+        var baseUrl = $"{scheme}://{host}";
 
-        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var query = new GetShareLinksQuery(userId, baseUrl);
+        var result = await _sender.Send(query, cancellationToken);
 
-        var response = shareLinks.Select(sl => new ShareLinkResponse
-        {
-            Id = sl.Id,
-            Token = sl.Token,
-            Type = sl.Type,
-            PhotoId = sl.PhotoId,
-            AlbumId = sl.AlbumId,
-            TargetName = sl.Type == ShareLinkType.Photo
-                ? sl.Photo?.OriginalFileName
-                : sl.Album?.Name,
-            HasPassword = sl.PasswordHash != null,
-            ExpiresAt = sl.ExpiresAt,
-            AllowDownload = sl.AllowDownload,
-            ShareUrl = $"{baseUrl}/shared/{sl.Token}",
-            IsActive = sl.IsActive,
-            CreatedAt = sl.CreatedAt
-        }).ToList();
-
-        return Ok(response);
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { message = result.Error });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> RevokeShareLink(Guid id, CancellationToken cancellationToken)
     {
-        var shareLink = await _shareLinkRepository.GetByIdAsync(id, cancellationToken);
+        var command = new DeleteShareLinkCommand(id, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
 
-        if (shareLink == null)
-            return NotFound();
-
-        if (shareLink.UserId != GetUserId())
-            return Forbid();
-
-        shareLink.RevokedAt = DateTime.UtcNow;
-        await _shareLinkRepository.UpdateAsync(shareLink, cancellationToken);
-
-        return NoContent();
+        if (result.IsSuccess)
+            return NoContent();
+        return result.ToHttpResponse();
     }
 }

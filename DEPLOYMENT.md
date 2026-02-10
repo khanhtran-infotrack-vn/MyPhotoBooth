@@ -1,6 +1,6 @@
 # 🚀 Deployment Guide
 
-This guide covers deployment options for MyPhotoBooth application.
+This guide covers deployment options for MyPhotoBooth application (v1.3.0 - CQRS Architecture with comprehensive testing).
 
 ## Table of Contents
 
@@ -27,6 +27,7 @@ Before deploying to production, ensure you:
 - [ ] Review and test all security settings
 - [ ] Set up error tracking (Sentry, Application Insights, etc.)
 - [ ] Configure CDN for static assets (optional)
+- [ ] Configure production email service (SendGrid, AWS SES, etc.)
 
 ## Docker Deployment
 
@@ -172,6 +173,13 @@ services:
       JwtSettings__RefreshTokenExpirationDays: ${JWT_REFRESH_EXPIRATION:-7}
       StorageSettings__PhotosBasePath: /app/storage/photos
       StorageSettings__MaxFileSizeMB: ${MAX_FILE_SIZE_MB:-50}
+      EmailSettings__SmtpHost: ${SMTP_HOST}
+      EmailSettings__SmtpPort: ${SMTP_PORT:-587}
+      EmailSettings__SmtpUser: ${SMTP_USER}
+      EmailSettings__SmtpPass: ${SMTP_PASS}
+      EmailSettings__FromEmail: ${FROM_EMAIL:-noreply@myphotobooth.com}
+      EmailSettings__FromName: ${FROM_NAME:-MyPhotoBooth}
+      EmailSettings__EnableSsl: ${SMTP_SSL:-true}
     volumes:
       - api_storage:/app/storage
       - api_logs:/app/logs
@@ -248,6 +256,15 @@ JWT_REFRESH_EXPIRATION=7
 
 # Storage
 MAX_FILE_SIZE_MB=50
+
+# Email (Production)
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=your-sendgrid-api-key
+FROM_EMAIL=noreply@yourdomain.com
+FROM_NAME=MyPhotoBooth
+SMTP_SSL=true
 
 # API
 API_BASE_URL=https://yourdomain.com/api
@@ -524,6 +541,75 @@ Configure logging in `appsettings.Production.json`:
 5. **SQL Injection** - Use parameterized queries (EF Core handles this)
 6. **XSS Protection** - Sanitize user inputs
 7. **File Upload** - Validate file types and sizes
+
+## Email Service Configuration
+
+### Development (Mailpit)
+
+For local development, Mailpit is already configured in `docker-compose.yml`:
+
+```yaml
+mailpit:
+  image: axllent/mailpit:latest
+  ports:
+    - "8025:8025"
+    - "1025:1025"
+```
+
+Access the Mailpit web UI at http://localhost:8025 to view captured emails.
+
+### Production Email Services
+
+Choose a production email service and configure the following settings in your environment:
+
+#### SendGrid
+
+```env
+EmailSettings__SmtpHost=smtp.sendgrid.net
+EmailSettings__SmtpPort=587
+EmailSettings__SmtpUser=apikey
+EmailSettings__SmtpPass=YOUR_SENDGRID_API_KEY
+EmailSettings__FromEmail=noreply@yourdomain.com
+EmailSettings__FromName=MyPhotoBooth
+EmailSettings__EnableSsl=true
+```
+
+#### AWS SES
+
+```env
+EmailSettings__SmtpHost=email-smtp.us-east-1.amazonaws.com
+EmailSettings__SmtpPort=587
+EmailSettings__SmtpUser=YOUR_SES_SMTP_USERNAME
+EmailSettings__SmtpPass=YOUR_SES_SMTP_PASSWORD
+EmailSettings__FromEmail=noreply@yourdomain.com
+EmailSettings__FromName=MyPhotoBooth
+EmailSettings__EnableSsl=true
+```
+
+#### Mailgun
+
+```env
+EmailSettings__SmtpHost=smtp.mailgun.org
+EmailSettings__SmtpPort=587
+EmailSettings__SmtpUser=postmaster@yourdomain.com
+EmailSettings__SmtpPass=YOUR_MAILGUN_PASSWORD
+EmailSettings__FromEmail=noreply@yourdomain.com
+EmailSettings__FromName=MyPhotoBooth
+EmailSettings__EnableSsl=true
+```
+
+### Email Templates
+
+The application sends the following email types:
+- **Password Reset**: Contains a secure token link for password reset
+- **Future**: Email verification, notifications, etc.
+
+### Security Considerations
+
+- **User Enumeration**: The forgot password endpoint returns success even if the email doesn't exist (prevents user enumeration)
+- **Token Expiration**: Password reset tokens expire after a configurable period (default: 1 hour)
+- **Rate Limiting**: Consider implementing rate limiting on password reset endpoints
+- **Secure Tokens**: Uses ASP.NET Identity's cryptographic token generation
 
 ## Troubleshooting
 

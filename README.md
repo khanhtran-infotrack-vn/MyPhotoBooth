@@ -1,36 +1,44 @@
 # 📸 MyPhotoBooth
 
-A modern photo memories application for storing and viewing photos with friends and family. Built with React and ASP.NET Core.
+A modern photo memories application for storing and viewing photos with friends and family. Built with React and ASP.NET Core using Clean Architecture and CQRS patterns.
 
-![MyPhotoBooth](https://img.shields.io/badge/Version-1.1.0-blue)
+![MyPhotoBooth](https://img.shields.io/badge/Version-1.3.0-blue)
 ![React](https://img.shields.io/badge/React-18-61dafb)
 ![.NET](https://img.shields.io/badge/.NET-10.0-512bd4)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
+![Test Coverage](https://img.shields.io/badge/Tests-117-success)
 
 ## ✨ Features
 
 - 🔐 **Secure Authentication** - Email/password authentication with JWT tokens
+- 🔑 **Password Reset** - Forgot password flow with email tokens
 - 📸 **Photo Management** - Upload, view, organize, and delete photos
 - 🖼️ **Smart Image Processing** - Auto-rotation, EXIF extraction, thumbnail generation
 - 📁 **Albums & Tags** - Organize photos into albums and tag them
 - 📅 **Timeline View** - Browse photos by date
 - 🔗 **Public Sharing** - Share photos and albums via secure public links
 - 🎨 **Modern UI** - Beautiful, responsive design with smooth animations
+- 🌙 **Dark Mode** - Three-state theme toggle (Light | Dark | System)
 - 🚀 **High Performance** - Optimized image loading with blob URLs
 - 📱 **Responsive** - Works on desktop, tablet, and mobile
+- ✅ **Smart Routing** - Auth redirects for logged-in users
+- 🧪 **Comprehensive Testing** - 117 tests with ~70% coverage (unit + integration)
 
 ## 🏗️ Architecture
 
-### Clean Architecture Pattern
+### Clean Architecture with CQRS Pattern
 
 ```
 MyPhotoBooth/
 ├── src/
-│   ├── MyPhotoBooth.API/          # Presentation Layer (ASP.NET Core Web API)
-│   ├── MyPhotoBooth.Application/  # Application Layer (DTOs, Interfaces)
+│   ├── MyPhotoBooth.API/          # Presentation Layer (Controllers, Middleware)
+│   ├── MyPhotoBooth.Application/  # Application Layer (CQRS, MediatR, Validators)
 │   ├── MyPhotoBooth.Infrastructure/# Infrastructure Layer (EF Core, Services)
 │   ├── MyPhotoBooth.Domain/       # Domain Layer (Entities, Business Logic)
 │   └── client/                     # React Frontend (TypeScript + Vite)
+├── tests/
+│   ├── MyPhotoBooth.UnitTests/    # Unit Tests (86 tests)
+│   └── MyPhotoBooth.IntegrationTests/ # Integration Tests (31 tests)
 ```
 
 ### Technology Stack
@@ -41,8 +49,18 @@ MyPhotoBooth/
 - PostgreSQL 16
 - ASP.NET Identity (Authentication)
 - JWT Bearer Authentication
+- MediatR 14.0 (CQRS Pattern)
+- FluentValidation 12.1 (Validation)
+- CSharpFunctionalExtensions (Result Pattern)
 - SixLabors.ImageSharp (Image Processing)
 - Scalar API Documentation
+
+**Testing:**
+- xUnit 2.9 (Test Framework)
+- Moq 4.20 (Mocking)
+- FluentAssertions 8.8 (Assertions)
+- Testcontainers 4.10 (Integration Testing)
+- Coverlet 6.0 (Code Coverage)
 
 **Frontend:**
 - React 18
@@ -143,6 +161,22 @@ The application seeds two roles on startup:
 - **User** - Regular users who can manage their photos
 - **Admin** - Administrators (future use)
 
+### Quick Start
+
+Use the provided quick start script to launch all services:
+
+```bash
+./start.sh
+```
+
+This script will:
+1. Start PostgreSQL and Mailpit services using Docker Compose
+2. Start the backend API on http://localhost:5149
+3. Start the frontend on http://localhost:3000
+4. Run health checks to ensure all services are running
+
+For individual service startup, see the Installation section below.
+
 ### API Endpoints
 
 **Authentication:**
@@ -150,6 +184,8 @@ The application seeds two roles on startup:
 - `POST /api/auth/login` - Login
 - `POST /api/auth/refresh` - Refresh access token
 - `POST /api/auth/logout` - Logout
+- `POST /api/auth/forgot-password` - Request password reset email
+- `POST /api/auth/reset-password` - Reset password with token
 
 **Photos:**
 - `POST /api/photos` - Upload photo
@@ -235,6 +271,28 @@ Share photos and albums with anyone via secure public links:
 3. Access token is included in all API requests
 4. When access token expires, refresh token is used to get new tokens
 5. Refresh tokens are stored in database with rotation
+6. User can reset password via email link (development uses Mailpit)
+
+### Email Service (Development)
+
+For development, the application uses Mailpit to capture emails without sending them:
+- Mailpit Web UI: http://localhost:8025
+- SMTP Server: localhost:1025
+
+For production, configure a real email service (SendGrid, AWS SES, etc.) in `appsettings.Production.json`.
+
+### Frontend Routes
+
+- `/login` - Login page (redirects if already logged in)
+- `/register` - Registration page (redirects if already logged in)
+- `/forgot-password` - Request password reset
+- `/reset-password` - Reset password with token
+- `/` or `/photos` - Photo gallery (protected)
+- `/albums` - Album list (protected)
+- `/albums/{id}` - Album detail (protected)
+- `/tags` - Tags list (protected)
+- `/shares` - Share links management (protected)
+- `/shared/{token}` - Public shared content view (public)
 
 ## 🐳 Docker Deployment
 
@@ -307,8 +365,20 @@ docker-compose -f docker-compose.prod.yml up -d
 ### Run Tests
 
 ```bash
-# Backend tests
+# Run all tests
 dotnet test
+
+# Run unit tests only
+dotnet test tests/MyPhotoBooth.UnitTests
+
+# Run integration tests only
+dotnet test tests/MyPhotoBooth.IntegrationTests
+
+# Run with coverage
+dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+
+# Run specific test
+dotnet test --filter "FullyQualifiedName~LoginCommandHandlerTests"
 
 # Frontend tests
 cd src/client
@@ -330,11 +400,21 @@ dotnet ef migrations remove --project src/MyPhotoBooth.Infrastructure --startup-
 
 ### Code Structure
 
-- **Controllers** - API endpoints
-- **Services** - Business logic
-- **Repositories** - Data access
-- **DTOs** - Data transfer objects
+**Backend Architecture (CQRS with MediatR):**
+- **Controllers** - Thin wrappers that use ISender to dispatch commands/queries
+- **Features** - Feature-based organization (Auth, Photos, Albums, Tags, ShareLinks)
+  - **Commands** - Write operations (Create, Update, Delete)
+  - **Queries** - Read operations (Get, List, Search)
+  - **Handlers** - Business logic implementation
+  - **Validators** - FluentValidation rules
+- **Common/Behaviors** - Cross-cutting concerns (Validation, Logging, Transaction)
+- **Common/DTOs** - Data transfer objects
 - **Entities** - Domain models
+
+**Pipeline Behaviors (Execution Order):**
+1. **ValidationBehavior** - Validates incoming requests using FluentValidation
+2. **LoggingBehavior** - Logs request/response with timing
+3. **TransactionBehavior** - Wraps handlers in database transactions
 
 ## 📝 Environment Variables
 
@@ -350,6 +430,10 @@ dotnet ef migrations remove --project src/MyPhotoBooth.Infrastructure --startup-
 | `JwtSettings__RefreshTokenExpirationDays` | Refresh token lifetime | 7 |
 | `StorageSettings__PhotosBasePath` | Photo storage path | ./storage/photos |
 | `StorageSettings__MaxFileSizeMB` | Max upload size | 50 |
+| `EmailSettings__SmtpHost` | SMTP server host | localhost (dev) |
+| `EmailSettings__SmtpPort` | SMTP server port | 1025 (dev) |
+| `EmailSettings__FromEmail` | From email address | noreply@myphotobooth.com |
+| `EmailSettings__FromName` | From display name | MyPhotoBooth |
 
 ### Frontend (React)
 
@@ -384,4 +468,95 @@ For issues, questions, or contributions, please open an issue on GitHub.
 
 ---
 
-Made with ❤️ by [Your Name]
+Made with ❤️
+
+## 📜 Changelog
+
+### v1.3.0 - CQRS Architecture & Testing (Current)
+
+**Architecture Refactoring:**
+- Implemented CQRS pattern using MediatR 14.0
+- Separated Commands (writes) and Queries (reads)
+- Migrated all services to command/query handlers
+- Controllers now use ISender for dispatching requests
+- Feature-based folder structure (Features/Auth, Features/Photos, etc.)
+
+**Validation:**
+- Integrated FluentValidation 12.1 for declarative validation
+- Automatic validation via MediatR pipeline
+- Custom validators: Email, Password, StrongPassword, ImageFile, UserName, AlbumName, TagName
+- Validation errors return structured error messages
+
+**Pipeline Behaviors:**
+- ValidationBehavior - Validates requests before handlers
+- LoggingBehavior - Logs all requests with timing information
+- TransactionBehavior - Wraps handlers in database transactions
+- Behaviors execute in order: Validation → Logging → Transaction
+
+**Error Handling:**
+- Implemented Result<T> pattern using CSharpFunctionalExtensions
+- Centralized error constants in Errors.cs
+- Consistent error responses across all endpoints
+
+**Testing:**
+- Added 86 unit tests covering validators, behaviors, and handlers
+- Added 31 integration tests covering all API endpoints
+- Testcontainers for PostgreSQL in integration tests
+- Test coverage: ~70% validators, ~10% handlers, 100% behaviors, 100% API endpoints
+- Test frameworks: xUnit, Moq, FluentAssertions
+
+**Infrastructure:**
+- Registered MediatR and FluentValidation in DI container
+- Pipeline behaviors registered with correct order
+- TestWebApplicationFactory for integration testing
+- MockEmailService for email testing
+
+### v1.2.0 - Login Flow Completion
+
+**Bug Fixes:**
+- Fixed user data consistency on page refresh (localStorage persistence)
+
+**Features:**
+- Added forgot password functionality with email tokens
+- Added password reset UI and flow
+- Implemented PublicRoute component for authenticated user redirects
+- Added quick start script (start.sh) for easy development setup
+- Added Mailpit integration for email testing in development
+
+**Infrastructure:**
+- Created IEmailService interface and EmailService implementation
+- Added email DTOs (EmailRequest, EmailResponse)
+- Added password reset DTOs (ForgotPasswordRequest, ResetPasswordRequest)
+- Registered EmailService in DI container
+- Added EmailSettings configuration
+
+**Security:**
+- Password reset tokens use ASP.NET Identity cryptographic generation
+- User enumeration protection (returns success even for non-existent emails)
+- Token expiration for password reset links
+
+### v1.1.0 - Public Sharing Feature
+
+**Features:**
+- Token-based public link sharing for photos and albums
+- Password protection for sensitive shares
+- Expiration date configuration
+- Download control (enable/disable)
+- Share link revocation
+- ShareManagement UI for managing active shares
+- Public SharedView for viewing shared content without authentication
+
+**Infrastructure:**
+- New ShareLink entity with migration (20260210021155_AddShareLinks)
+- Two controllers: ShareLinksController (auth) + SharedController (public)
+
+### v1.0.0 - Initial Release
+
+**Features:**
+- JWT authentication with refresh tokens
+- Photo upload with drag-and-drop
+- Image processing with EXIF extraction
+- Albums and tags management
+- Timeline view
+- Modern gradient UI theme
+- Scalar API documentation

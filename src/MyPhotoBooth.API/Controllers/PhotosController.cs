@@ -1,9 +1,12 @@
-using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+using MyPhotoBooth.API.Common;
 using MyPhotoBooth.Application.Common.DTOs;
-using MyPhotoBooth.Application.Interfaces;
-using MyPhotoBooth.Domain.Entities;
+using MyPhotoBooth.Application.Features.Photos.Commands;
+using MyPhotoBooth.Application.Features.Photos.Queries;
 
 namespace MyPhotoBooth.API.Controllers;
 
@@ -12,310 +15,88 @@ namespace MyPhotoBooth.API.Controllers;
 [Route("api/[controller]")]
 public class PhotosController : ControllerBase
 {
-    private readonly IPhotoRepository _photoRepository;
-    private readonly IFileStorageService _fileStorageService;
-    private readonly IImageProcessingService _imageProcessingService;
-    private readonly IConfiguration _configuration;
+    private readonly ISender _mediator;
 
-    public PhotosController(
-        IPhotoRepository photoRepository,
-        IFileStorageService fileStorageService,
-        IImageProcessingService imageProcessingService,
-        IConfiguration configuration)
+    public PhotosController(ISender mediator)
     {
-        _photoRepository = photoRepository;
-        _fileStorageService = fileStorageService;
-        _imageProcessingService = imageProcessingService;
-        _configuration = configuration;
+        _mediator = mediator;
     }
 
-    private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) 
-        ?? throw new UnauthorizedAccessException("User ID not found");
+    private string GetUserId()
+    {
+        return User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new UnauthorizedAccessException("User ID not found in token");
+    }
 
     [HttpPost]
     public async Task<IActionResult> UploadPhoto(IFormFile file, [FromForm] string? description, CancellationToken cancellationToken)
     {
-        if (file == null || file.Length == 0)
-        {
-            return BadRequest(new { message = "No file uploaded" });
-        }
-
-        var maxFileSizeMB = int.Parse(_configuration["StorageSettings:MaxFileSizeMB"] ?? "50");
-        if (file.Length > maxFileSizeMB * 1024 * 1024)
-        {
-            return BadRequest(new { message = $"File size exceeds {maxFileSizeMB}MB limit" });
-        }
-
-        using var stream = file.OpenReadStream();
-        if (!_imageProcessingService.IsValidImageFile(stream, file.ContentType))
-        {
-            return BadRequest(new { message = "Invalid image file" });
-        }
-
-        var userId = GetUserId();
-        var storageKey = Guid.NewGuid().ToString();
-        var fileName = $"{storageKey}.jpg";
-
-        // Process image
-        stream.Position = 0;
-        var processed = await _imageProcessingService.ProcessImageAsync(stream, cancellationToken);
-
-        // Save files
-        var originalPath = _fileStorageService.BuildStoragePath(userId, fileName, false);
-        var thumbnailPath = _fileStorageService.BuildStoragePath(userId, fileName, true);
-
-        await _fileStorageService.SaveFileAsync(processed.OriginalStream, originalPath, cancellationToken);
-        await _fileStorageService.SaveFileAsync(processed.ThumbnailStream, thumbnailPath, cancellationToken);
-
-        processed.OriginalStream.Dispose();
-        processed.ThumbnailStream.Dispose();
-
-        // Extract captured date from EXIF if available
-        DateTime? capturedAt = null;
-        if (!string.IsNullOrEmpty(processed.ExifDataJson))
-        {
-            try
-            {
-                var exifDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(processed.ExifDataJson);
-                if (exifDict != null && exifDict.ContainsKey("DateTimeOriginal"))
-                {
-                    if (DateTime.TryParse(exifDict["DateTimeOriginal"].ToString(), out var dt))
-                    {
-                        capturedAt = dt;
-                    }
-                }
-            }
-            catch { }
-        }
-
-        // Create photo record
-        var photo = new Photo
-        {
-            Id = Guid.NewGuid(),
-            OriginalFileName = file.FileName,
-            StorageKey = storageKey,
-            FilePath = originalPath,
-            ThumbnailPath = thumbnailPath,
-            FileSize = file.Length,
-            ContentType = "image/jpeg",
-            Width = processed.Width,
-            Height = processed.Height,
-            CapturedAt = capturedAt,
-            UploadedAt = DateTime.UtcNow,
-            Description = description,
-            UserId = userId,
-            ExifDataJson = processed.ExifDataJson
-        };
-
-        await _photoRepository.AddAsync(photo, cancellationToken);
-
-        return Ok(new PhotoUploadResponse
-        {
-            Id = photo.Id,
-            OriginalFileName = photo.OriginalFileName,
-            FileSize = photo.FileSize,
-            Width = processed.Width,
-            Height = processed.Height,
-            UploadedAt = photo.UploadedAt,
-            Description = photo.Description
-        });
+        var command = new UploadPhotoCommand(file, description, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
     }
 
     [HttpGet]
     public async Task<IActionResult> ListPhotos([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
-        var userId = GetUserId();
-        var skip = (page - 1) * pageSize;
-
-        var photos = await _photoRepository.GetByUserIdAsync(userId, skip, pageSize, cancellationToken);
-        var totalCount = await _photoRepository.GetCountByUserIdAsync(userId, cancellationToken);
-
-        var photoList = photos.Select(p => new PhotoListResponse
-        {
-            Id = p.Id,
-            OriginalFileName = p.OriginalFileName,
-            Width = p.Width,
-            Height = p.Height,
-            CapturedAt = p.CapturedAt,
-            UploadedAt = p.UploadedAt,
-            ThumbnailPath = p.ThumbnailPath
-        }).ToList();
-
-        return Ok(new PaginatedResponse<PhotoListResponse>
-        {
-            Items = photoList,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount,
-            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
-        });
+        var query = new GetPhotosQuery(page, pageSize, null, null, GetUserId());
+        var result = await _mediator.Send(query, cancellationToken);
+        return result.ToHttpResponse();
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPhoto(Guid id, CancellationToken cancellationToken)
     {
-        var photo = await _photoRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (photo == null)
-        {
-            return NotFound();
-        }
-
-        if (photo.UserId != GetUserId())
-        {
-            return Forbid();
-        }
-
-        return Ok(new PhotoDetailsResponse
-        {
-            Id = photo.Id,
-            OriginalFileName = photo.OriginalFileName,
-            FileSize = photo.FileSize,
-            Width = photo.Width,
-            Height = photo.Height,
-            CapturedAt = photo.CapturedAt,
-            UploadedAt = photo.UploadedAt,
-            Description = photo.Description,
-            ExifData = photo.ExifDataJson,
-            Tags = photo.PhotoTags.Select(pt => pt.Tag.Name).ToList()
-        });
+        var query = new GetPhotoQuery(id, GetUserId());
+        var result = await _mediator.Send(query, cancellationToken);
+        return result.ToHttpResponse();
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdatePhoto(Guid id, [FromBody] UpdatePhotoRequest request, CancellationToken cancellationToken)
     {
-        var photo = await _photoRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (photo == null)
-        {
-            return NotFound();
-        }
-
-        if (photo.UserId != GetUserId())
-        {
-            return Forbid();
-        }
-
-        photo.Description = request.Description;
-        await _photoRepository.UpdateAsync(photo, cancellationToken);
-
-        return NoContent();
+        var command = new UpdatePhotoCommand(id, request.Description, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePhoto(Guid id, CancellationToken cancellationToken)
     {
-        var photo = await _photoRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (photo == null)
-        {
-            return NotFound();
-        }
-
-        if (photo.UserId != GetUserId())
-        {
-            return Forbid();
-        }
-
-        // Delete files
-        await _fileStorageService.DeleteFileAsync(photo.FilePath, cancellationToken);
-        await _fileStorageService.DeleteFileAsync(photo.ThumbnailPath, cancellationToken);
-
-        // Delete database record
-        await _photoRepository.DeleteAsync(id, cancellationToken);
-
-        return NoContent();
+        var command = new DeletePhotoCommand(id, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
     }
 
     [HttpGet("{id}/file")]
     public async Task<IActionResult> GetPhotoFile(Guid id, CancellationToken cancellationToken)
     {
-        var photo = await _photoRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (photo == null)
-        {
-            return NotFound();
-        }
+        var query = new GetPhotoFileQuery(id, GetUserId());
+        var result = await _mediator.Send(query, cancellationToken);
 
-        if (photo.UserId != GetUserId())
-        {
-            return Forbid();
-        }
+        if (result.IsSuccess)
+            return File(result.Value.Stream, result.Value.ContentType, result.Value.FileName);
 
-        var stream = await _fileStorageService.GetFileStreamAsync(photo.FilePath, cancellationToken);
-        if (stream == null)
-        {
-            return NotFound();
-        }
-
-        return File(stream, photo.ContentType, photo.OriginalFileName);
+        return result.ToHttpResponse();
     }
 
     [HttpGet("{id}/thumbnail")]
     public async Task<IActionResult> GetPhotoThumbnail(Guid id, CancellationToken cancellationToken)
     {
-        var photo = await _photoRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (photo == null)
-        {
-            return NotFound();
-        }
+        var query = new GetPhotoThumbnailQuery(id, GetUserId());
+        var result = await _mediator.Send(query, cancellationToken);
 
-        if (photo.UserId != GetUserId())
-        {
-            return Forbid();
-        }
+        if (result.IsSuccess)
+            return File(result.Value, "image/jpeg");
 
-        var stream = await _fileStorageService.GetFileStreamAsync(photo.ThumbnailPath, cancellationToken);
-        if (stream == null)
-        {
-            return NotFound();
-        }
-
-        return File(stream, "image/jpeg");
+        return result.ToHttpResponse();
     }
 
     [HttpGet("timeline")]
     public async Task<IActionResult> GetTimeline([FromQuery] int? year, [FromQuery] int? month, [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
-        var userId = GetUserId();
-        var skip = (page - 1) * pageSize;
-
-        DateTime? fromDate = null;
-        DateTime? toDate = null;
-
-        if (year.HasValue && month.HasValue)
-        {
-            fromDate = new DateTime(year.Value, month.Value, 1);
-            toDate = fromDate.Value.AddMonths(1);
-        }
-        else if (year.HasValue)
-        {
-            fromDate = new DateTime(year.Value, 1, 1);
-            toDate = fromDate.Value.AddYears(1);
-        }
-
-        var photos = await _photoRepository.GetTimelineAsync(userId, fromDate, toDate, skip, pageSize, cancellationToken);
-        var totalCount = await _photoRepository.GetTimelineCountAsync(userId, fromDate, toDate, cancellationToken);
-
-        var photoList = photos.Select(p => new PhotoListResponse
-        {
-            Id = p.Id,
-            OriginalFileName = p.OriginalFileName,
-            Width = p.Width,
-            Height = p.Height,
-            CapturedAt = p.CapturedAt,
-            UploadedAt = p.UploadedAt,
-            ThumbnailPath = p.ThumbnailPath
-        }).ToList();
-
-        return Ok(new PaginatedResponse<PhotoListResponse>
-        {
-            Items = photoList,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount,
-            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
-        });
+        var query = new GetTimelineQuery(year, month, page, pageSize, GetUserId());
+        var result = await _mediator.Send(query, cancellationToken);
+        return result.ToHttpResponse();
     }
 }

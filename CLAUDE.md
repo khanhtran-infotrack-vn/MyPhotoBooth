@@ -8,18 +8,30 @@ MyPhotoBooth is a full-stack photo memories application for storing, organizing,
 
 ## Project Status
 
-**Status**: ✅ Production Ready (v1.1.0)
+**Status**: ✅ Production Ready (v1.3.0)
 
-All core features implemented and tested, including public sharing (v1.1.0). Ready for deployment.
+All core features implemented and tested, including CQRS architecture with MediatR (v1.3.0). Comprehensive test coverage with 117 tests. Ready for deployment.
 
 ## Architecture
 
-### Clean Architecture (4 Layers)
+### Clean Architecture (4 Layers) + CQRS
 
 ```
 src/
 ├── MyPhotoBooth.API/          # Presentation (Controllers, Middleware)
-├── MyPhotoBooth.Application/  # Application (DTOs, Interfaces)
+├── MyPhotoBooth.Application/  # Application (CQRS, MediatR, Validators)
+│   ├── Features/              # Feature-based organization
+│   │   ├── Auth/             # Commands, Queries, Handlers, Validators
+│   │   ├── Photos/           # Commands, Queries, Handlers, Validators
+│   │   ├── Albums/           # Commands, Queries, Handlers, Validators
+│   │   ├── Tags/             # Commands, Queries, Handlers, Validators
+│   │   └── ShareLinks/       # Commands, Queries, Handlers, Validators
+│   └── Common/               # Shared components
+│       ├── Behaviors/        # Validation, Logging, Transaction
+│       ├── DTOs/             # Data transfer objects
+│       ├── Requests/         # IRequest, ICommand, IQuery
+│       ├── Validators/       # Shared validators
+│       └── Pagination/       # PaginatedResult
 ├── MyPhotoBooth.Infrastructure/# Infrastructure (EF Core, Services)
 ├── MyPhotoBooth.Domain/       # Domain (Entities, Business Logic)
 └── client/                    # React Frontend (TypeScript + Vite)
@@ -32,8 +44,18 @@ src/
 - Entity Framework Core 10.0
 - PostgreSQL 16
 - ASP.NET Identity + JWT Authentication
+- MediatR 14.0 (CQRS Pattern)
+- FluentValidation 12.1 (Validation)
+- CSharpFunctionalExtensions (Result Pattern)
 - SixLabors.ImageSharp (Image Processing)
 - Scalar API Documentation
+
+**Testing:**
+- xUnit 2.9 (Test Framework)
+- Moq 4.20 (Mocking)
+- FluentAssertions 8.8 (Assertions)
+- Testcontainers 4.10 (Integration Testing)
+- Coverlet 6.0 (Code Coverage)
 
 **Frontend:**
 - React 18 + TypeScript
@@ -83,30 +105,41 @@ npm run preview
 ### Docker
 
 ```bash
-# Start PostgreSQL
+# Start PostgreSQL and Mailpit
 docker-compose up -d
 
 # Production deployment
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
+### Quick Start Script
+
+```bash
+# Start all services (PostgreSQL, Mailpit, Backend, Frontend)
+./start.sh
+```
+
 ## Key Features
 
 1. **Authentication** - Email/password with JWT tokens (access + refresh)
-2. **Photo Upload** - Drag-and-drop with progress tracking
-3. **Image Processing** - Auto-rotation, EXIF extraction, thumbnails
-4. **Photo Gallery** - Grid view with lightbox
-5. **Albums** - Organize photos into collections
-6. **Tags** - Tag photos for easy searching
-7. **Timeline** - Browse photos by date
-8. **Public Sharing** - Share photos/albums via secure token-based links
-9. **Modern UI** - Gradient design with smooth animations
+2. **Password Reset** - Forgot password flow with email tokens
+3. **Photo Upload** - Drag-and-drop with progress tracking
+4. **Image Processing** - Auto-rotation, EXIF extraction, thumbnails
+5. **Photo Gallery** - Grid view with lightbox
+6. **Albums** - Organize photos into collections
+7. **Tags** - Tag photos for easy searching
+8. **Timeline** - Browse photos by date
+9. **Public Sharing** - Share photos/albums via secure token-based links
+10. **Modern UI** - Gradient design with smooth animations
+11. **Smart Routing** - Auth redirects for logged-in users
 
 ## Project Structure
 
 ### Backend Endpoints
 
 - `POST /api/auth/register|login|refresh|logout` - Authentication
+- `POST /api/auth/forgot-password` - Request password reset
+- `POST /api/auth/reset-password` - Reset password with token
 - `GET|POST|PUT|DELETE /api/photos` - Photo management
 - `GET /api/photos/{id}/file|thumbnail` - Serve images
 - `GET /api/photos/timeline` - Timeline view
@@ -117,8 +150,10 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ### Frontend Routes
 
-- `/login` - Login page
-- `/register` - Registration page
+- `/login` - Login page (public route, redirects if authenticated)
+- `/register` - Registration page (public route, redirects if authenticated)
+- `/forgot-password` - Request password reset (public)
+- `/reset-password` - Reset password with token (public)
 - `/` or `/photos` - Photo gallery (protected)
 - `/albums` - Album list (protected)
 - `/albums/{id}` - Album detail (protected)
@@ -144,8 +179,8 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ### Backend
 
-- `appsettings.Development.json` - Development config
-- `appsettings.Production.json` - Production config (create from template)
+- `appsettings.Development.json` - Development config (includes EmailSettings for Mailpit)
+- `appsettings.Production.json` - Production config (create from template, configure real email service)
 
 ### Frontend
 
@@ -154,13 +189,67 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## Development Guidelines
 
-### Backend
+### Backend (CQRS with MediatR)
 
-1. Follow Clean Architecture principles
-2. Use repository pattern for data access
-3. DTOs for API contracts
-4. Async/await for all I/O operations
-5. Proper error handling and validation
+1. **Creating a New Feature:**
+   - Create feature folder: `Application/Features/{FeatureName}/`
+   - Add Commands folder for write operations
+   - Add Queries folder for read operations
+   - Add Handlers folder for business logic
+   - Add Validators folder for FluentValidation rules
+
+2. **Command Pattern:**
+   ```csharp
+   public record CreateSomethingCommand(string Name) : ICommand<SomethingDto>;
+
+   public class CreateSomethingCommandValidator : AbstractValidator<CreateSomethingCommand>
+   {
+       // Validation rules
+   }
+
+   public class CreateSomethingCommandHandler : ICommandHandler<CreateSomethingCommand, SomethingDto>
+   {
+       // Handler implementation
+   }
+   ```
+
+3. **Query Pattern:**
+   ```csharp
+   public record GetSomethingQuery(Guid Id) : IQuery<SomethingDto>;
+
+   public class GetSomethingQueryValidator : AbstractValidator<GetSomethingQuery>
+   {
+       // Validation rules
+   }
+
+   public class GetSomethingQueryHandler : IQueryHandler<GetSomethingQuery, SomethingDto>
+   {
+       // Handler implementation
+   }
+   ```
+
+4. **Controller Pattern:**
+   - Inject ISender from MediatR
+   - Use _sender.Send(command/query) to dispatch
+   - Return Result<T> from handlers
+   - Minimal controller logic, all business logic in handlers
+
+5. **Pipeline Behaviors:**
+   - Validation runs automatically before handlers
+   - Logging captures all requests/responses
+   - Transactions wrap database operations
+
+6. **Error Handling:**
+   - Use Result.Success() or Result.Failure("error message")
+   - Define error messages in Common/Errors.cs
+   - Return 400 Bad Request for validation failures
+   - Return 404 for not found resources
+
+7. **Testing:**
+   - Unit tests for validators, behaviors, handlers
+   - Integration tests for API endpoints
+   - Use Testcontainers for PostgreSQL in integration tests
+   - Mock dependencies in unit tests
 
 ### Frontend
 
@@ -192,6 +281,7 @@ docker-compose -f docker-compose.prod.yml up -d
 - **Backend API**: http://localhost:5149
 - **API Docs**: http://localhost:5149/scalar/v1
 - **OpenAPI Spec**: http://localhost:5149/openapi/v1.json
+- **Mailpit (Email Testing)**: http://localhost:8025
 
 ## Documentation
 
@@ -204,6 +294,28 @@ docker-compose -f docker-compose.prod.yml up -d
 None currently. All core features are complete and working.
 
 ## Recent Changes
+
+### v1.3.0 - CQRS Architecture & Testing
+- ✅ Implemented CQRS pattern using MediatR 14.0
+- ✅ Separated Commands (writes) and Queries (reads)
+- ✅ Migrated all services to command/query handlers
+- ✅ Controllers now use ISender for dispatching requests
+- ✅ Integrated FluentValidation 12.1 for declarative validation
+- ✅ Created pipeline behaviors: Validation, Logging, Transaction
+- ✅ Implemented Result<T> pattern for error handling
+- ✅ Added 86 unit tests (validators, behaviors, handlers)
+- ✅ Added 31 integration tests (API endpoints with Testcontainers)
+- ✅ Feature-based folder structure in Application layer
+- ✅ Test coverage: ~70% validators, ~10% handlers, 100% behaviors, 100% API endpoints
+
+### v1.2.0 - Login Flow Completion
+- ✅ Fixed user data consistency on page refresh (localStorage persistence)
+- ✅ Added PublicRoute component for authenticated user redirects
+- ✅ Implemented complete forgot password flow with email tokens
+- ✅ Added EmailService with Mailpit integration for development
+- ✅ Created password reset UI (ForgotPassword, ResetPassword components)
+- ✅ Added quick start script (start.sh) for easy development setup
+- ✅ New API endpoints: /api/auth/forgot-password, /api/auth/reset-password
 
 ### v1.1.0 - Public Sharing Feature
 - ✅ Token-based public link sharing for photos and albums

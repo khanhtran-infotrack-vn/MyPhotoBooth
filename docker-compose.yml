@@ -18,6 +18,16 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: myphotobooth_mailpit
+    ports:
+      - "8025:8025"
+      - "1026:1025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: true
+      MP_SMTP_AUTH_ALLOW_INSECURE: true
+
 volumes:
   postgres_data:
     driver: local

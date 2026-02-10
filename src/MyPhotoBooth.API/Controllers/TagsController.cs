@@ -1,9 +1,11 @@
-using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyPhotoBooth.API.Common;
 using MyPhotoBooth.Application.Common.DTOs;
-using MyPhotoBooth.Application.Interfaces;
-using MyPhotoBooth.Domain.Entities;
+using MyPhotoBooth.Application.Features.Tags.Commands;
+using MyPhotoBooth.Application.Features.Tags.Queries;
+using System.Security.Claims;
 
 namespace MyPhotoBooth.API.Controllers;
 
@@ -12,100 +14,82 @@ namespace MyPhotoBooth.API.Controllers;
 [Route("api/[controller]")]
 public class TagsController : ControllerBase
 {
-    private readonly ITagRepository _tagRepository;
+    private readonly ISender _sender;
 
-    public TagsController(ITagRepository tagRepository)
+    public TagsController(ISender sender)
     {
-        _tagRepository = tagRepository;
+        _sender = sender;
     }
 
-    private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) 
-        ?? throw new UnauthorizedAccessException("User ID not found");
+    private string GetUserId()
+    {
+        return User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new UnauthorizedAccessException("User ID not found in token");
+    }
 
     [HttpPost]
     public async Task<IActionResult> CreateTag([FromBody] CreateTagRequest request, CancellationToken cancellationToken)
     {
-        var userId = GetUserId();
+        var command = new CreateTagCommand(request.Name, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
 
-        // Check if tag already exists
-        var existingTag = await _tagRepository.GetByNameAsync(request.Name, userId, cancellationToken);
-        if (existingTag != null)
-        {
-            return Ok(new TagResponse
-            {
-                Id = existingTag.Id,
-                Name = existingTag.Name,
-                CreatedAt = existingTag.CreatedAt
-            });
-        }
-
-        var tag = new Tag
-        {
-            Id = Guid.NewGuid(),
-            Name = request.Name,
-            UserId = userId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await _tagRepository.AddAsync(tag, cancellationToken);
-
-        return Ok(new TagResponse
-        {
-            Id = tag.Id,
-            Name = tag.Name,
-            CreatedAt = tag.CreatedAt
-        });
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { message = result.Error });
     }
 
     [HttpGet]
     public async Task<IActionResult> ListTags(CancellationToken cancellationToken)
     {
-        var userId = GetUserId();
-        var tags = await _tagRepository.GetByUserIdAsync(userId, cancellationToken);
+        var query = new GetTagsQuery(GetUserId());
+        var result = await _sender.Send(query, cancellationToken);
 
-        var tagList = tags.Select(t => new TagResponse
-        {
-            Id = t.Id,
-            Name = t.Name,
-            CreatedAt = t.CreatedAt
-        }).ToList();
-
-        return Ok(tagList);
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { message = result.Error });
     }
 
     [HttpGet("search")]
     public async Task<IActionResult> SearchTags([FromQuery] string query, CancellationToken cancellationToken)
     {
-        var userId = GetUserId();
-        var tags = await _tagRepository.SearchAsync(query, userId, cancellationToken);
+        var queryObj = new SearchTagsQuery(query, GetUserId());
+        var result = await _sender.Send(queryObj, cancellationToken);
 
-        var tagList = tags.Select(t => new TagResponse
-        {
-            Id = t.Id,
-            Name = t.Name,
-            CreatedAt = t.CreatedAt
-        }).ToList();
-
-        return Ok(tagList);
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { message = result.Error });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTag(Guid id, CancellationToken cancellationToken)
     {
-        var tag = await _tagRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (tag == null)
-        {
-            return NotFound();
-        }
+        var command = new DeleteTagCommand(id, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
 
-        if (tag.UserId != GetUserId())
-        {
-            return Forbid();
-        }
+        if (result.IsSuccess)
+            return NoContent();
+        return result.ToHttpResponse();
+    }
 
-        await _tagRepository.DeleteAsync(id, cancellationToken);
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetTag(Guid id, CancellationToken cancellationToken)
+    {
+        var query = new GetTagQuery(id, GetUserId());
+        var result = await _sender.Send(query, cancellationToken);
 
-        return NoContent();
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return result.ToHttpResponse();
+    }
+
+    [HttpGet("{id}/photos")]
+    public async Task<IActionResult> GetTagPhotos(Guid id, CancellationToken cancellationToken)
+    {
+        var query = new GetTagPhotosQuery(id, GetUserId());
+        var result = await _sender.Send(query, cancellationToken);
+
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return result.ToHttpResponse();
     }
 }

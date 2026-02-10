@@ -1,9 +1,11 @@
-using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyPhotoBooth.API.Common;
 using MyPhotoBooth.Application.Common.DTOs;
-using MyPhotoBooth.Application.Interfaces;
-using MyPhotoBooth.Domain.Entities;
+using MyPhotoBooth.Application.Features.Albums.Commands;
+using MyPhotoBooth.Application.Features.Albums.Queries;
+using System.Security.Claims;
 
 namespace MyPhotoBooth.API.Controllers;
 
@@ -12,182 +14,104 @@ namespace MyPhotoBooth.API.Controllers;
 [Route("api/[controller]")]
 public class AlbumsController : ControllerBase
 {
-    private readonly IAlbumRepository _albumRepository;
+    private readonly ISender _sender;
 
-    public AlbumsController(IAlbumRepository albumRepository)
+    public AlbumsController(ISender sender)
     {
-        _albumRepository = albumRepository;
+        _sender = sender;
     }
 
-    private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) 
-        ?? throw new UnauthorizedAccessException("User ID not found");
+    private string GetUserId()
+    {
+        return User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new UnauthorizedAccessException("User ID not found in token");
+    }
 
     [HttpPost]
     public async Task<IActionResult> CreateAlbum([FromBody] CreateAlbumRequest request, CancellationToken cancellationToken)
     {
-        var album = new Album
-        {
-            Id = Guid.NewGuid(),
-            Name = request.Name,
-            Description = request.Description,
-            UserId = GetUserId(),
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+        var command = new CreateAlbumCommand(request.Name, request.Description, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
 
-        await _albumRepository.AddAsync(album, cancellationToken);
-
-        return Ok(new AlbumResponse
-        {
-            Id = album.Id,
-            Name = album.Name,
-            Description = album.Description,
-            CoverPhotoId = album.CoverPhotoId,
-            CreatedAt = album.CreatedAt,
-            UpdatedAt = album.UpdatedAt,
-            PhotoCount = 0
-        });
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { message = result.Error });
     }
 
     [HttpGet]
     public async Task<IActionResult> ListAlbums(CancellationToken cancellationToken)
     {
-        var userId = GetUserId();
-        var albums = await _albumRepository.GetByUserIdAsync(userId, cancellationToken);
+        var query = new GetAlbumsQuery(GetUserId());
+        var result = await _sender.Send(query, cancellationToken);
 
-        var albumList = albums.Select(a => new AlbumResponse
-        {
-            Id = a.Id,
-            Name = a.Name,
-            Description = a.Description,
-            CoverPhotoId = a.CoverPhotoId,
-            CreatedAt = a.CreatedAt,
-            UpdatedAt = a.UpdatedAt,
-            PhotoCount = a.AlbumPhotos.Count
-        }).ToList();
-
-        return Ok(albumList);
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { message = result.Error });
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetAlbum(Guid id, CancellationToken cancellationToken)
     {
-        var album = await _albumRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (album == null)
-        {
-            return NotFound();
-        }
+        var query = new GetAlbumQuery(id, GetUserId());
+        var result = await _sender.Send(query, cancellationToken);
 
-        if (album.UserId != GetUserId())
-        {
-            return Forbid();
-        }
-
-        return Ok(new AlbumDetailsResponse
-        {
-            Id = album.Id,
-            Name = album.Name,
-            Description = album.Description,
-            CoverPhotoId = album.CoverPhotoId,
-            CreatedAt = album.CreatedAt,
-            UpdatedAt = album.UpdatedAt,
-            Photos = album.AlbumPhotos.OrderBy(ap => ap.SortOrder).Select(ap => new PhotoListResponse
-            {
-                Id = ap.Photo.Id,
-                OriginalFileName = ap.Photo.OriginalFileName,
-                Width = ap.Photo.Width,
-                Height = ap.Photo.Height,
-                CapturedAt = ap.Photo.CapturedAt,
-                UploadedAt = ap.Photo.UploadedAt,
-                ThumbnailPath = ap.Photo.ThumbnailPath
-            }).ToList()
-        });
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return result.ToHttpResponse();
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAlbum(Guid id, [FromBody] UpdateAlbumRequest request, CancellationToken cancellationToken)
     {
-        var album = await _albumRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (album == null)
-        {
-            return NotFound();
-        }
+        var command = new UpdateAlbumCommand(id, request.Name, request.Description, request.CoverPhotoId, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
 
-        if (album.UserId != GetUserId())
-        {
-            return Forbid();
-        }
-
-        album.Name = request.Name;
-        album.Description = request.Description;
-        album.CoverPhotoId = request.CoverPhotoId;
-        album.UpdatedAt = DateTime.UtcNow;
-
-        await _albumRepository.UpdateAsync(album, cancellationToken);
-
-        return NoContent();
+        if (result.IsSuccess)
+            return NoContent();
+        return result.ToHttpResponse();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAlbum(Guid id, CancellationToken cancellationToken)
     {
-        var album = await _albumRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (album == null)
-        {
-            return NotFound();
-        }
+        var command = new DeleteAlbumCommand(id, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
 
-        if (album.UserId != GetUserId())
-        {
-            return Forbid();
-        }
-
-        await _albumRepository.DeleteAsync(id, cancellationToken);
-
-        return NoContent();
+        if (result.IsSuccess)
+            return NoContent();
+        return result.ToHttpResponse();
     }
 
     [HttpPost("{id}/photos")]
-    public async Task<IActionResult> AddPhotoToAlbum(Guid id, [FromBody] AddPhotoToAlbumRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> AddPhotosToAlbum(Guid id, [FromBody] List<Guid> photoIds, CancellationToken cancellationToken)
     {
-        var album = await _albumRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (album == null)
-        {
-            return NotFound();
-        }
+        var command = new AddPhotosToAlbumCommand(id, photoIds, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
 
-        if (album.UserId != GetUserId())
-        {
-            return Forbid();
-        }
-
-        var sortOrder = album.AlbumPhotos.Count;
-        await _albumRepository.AddPhotoToAlbumAsync(id, request.PhotoId, sortOrder, cancellationToken);
-
-        return NoContent();
+        if (result.IsSuccess)
+            return NoContent();
+        return result.ToHttpResponse();
     }
 
-    [HttpDelete("{id}/photos/{photoId}")]
-    public async Task<IActionResult> RemovePhotoFromAlbum(Guid id, Guid photoId, CancellationToken cancellationToken)
+    [HttpDelete("{id}/photos")]
+    public async Task<IActionResult> RemovePhotosFromAlbum(Guid id, [FromBody] List<Guid> photoIds, CancellationToken cancellationToken)
     {
-        var album = await _albumRepository.GetByIdAsync(id, cancellationToken);
-        
-        if (album == null)
-        {
-            return NotFound();
-        }
+        var command = new RemovePhotosFromAlbumCommand(id, photoIds, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
 
-        if (album.UserId != GetUserId())
-        {
-            return Forbid();
-        }
+        if (result.IsSuccess)
+            return NoContent();
+        return result.ToHttpResponse();
+    }
 
-        await _albumRepository.RemovePhotoFromAlbumAsync(id, photoId, cancellationToken);
+    [HttpGet("{id}/photos")]
+    public async Task<IActionResult> GetAlbumPhotos(Guid id, CancellationToken cancellationToken)
+    {
+        var query = new GetAlbumPhotosQuery(id, GetUserId());
+        var result = await _sender.Send(query, cancellationToken);
 
-        return NoContent();
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return result.ToHttpResponse();
     }
 }

@@ -31,9 +31,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: getStoredUser(),
 
   login: async (email: string, password: string) => {
+    // Refresh token is now handled by httpOnly cookie
     const { data } = await api.post('/auth/login', { email, password });
+    // Store only access token (refresh token is in httpOnly cookie)
     localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
     const user = { email, displayName: data.displayName };
     localStorage.setItem('user', JSON.stringify(user));
     set({ isAuthenticated: true, user });
@@ -44,17 +45,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (refreshToken) {
-      try {
-        await api.post('/auth/logout', { refreshToken });
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
+    try {
+      // Logout endpoint clears the httpOnly cookie server-side
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
     }
+    // Clear local storage (including old refreshToken from previous implementation)
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
     set({ isAuthenticated: false, user: null });
   },
 

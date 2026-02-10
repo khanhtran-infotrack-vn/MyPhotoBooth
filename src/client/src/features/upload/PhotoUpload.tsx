@@ -102,19 +102,22 @@ export function PhotoUpload({ onClose }: PhotoUploadProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md"
         onClick={!uploading ? onClose : undefined}
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl animate-scale-in">
+      <div className="relative w-full max-w-lg glass-strong rounded-3xl shadow-2xl dark:shadow-primary-600/20 overflow-hidden animate-scale-in">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Upload Photos</h2>
+        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200/50 dark:border-white/10 bg-gradient-to-r from-gray-50 to-white dark:from-dark-bg-tertiary/30 dark:to-transparent">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary">Upload Photos</h2>
+            <p className="text-sm text-gray-500 dark:text-dark-text-secondary mt-1">Share your memories</p>
+          </div>
           <button
             onClick={onClose}
             disabled={uploading}
-            className="btn-icon text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="btn-icon text-gray-400 dark:text-dark-text-secondary hover:text-gray-600 dark:hover:text-dark-text-primary hover:bg-gray-100 dark:hover:bg-dark-bg-tertiary disabled:opacity-50 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -123,9 +126,9 @@ export function PhotoUpload({ onClose }: PhotoUploadProps) {
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-8">
           {error && (
-            <div className="flex items-center gap-3 px-4 py-3 mb-4 text-sm font-medium text-red-700 bg-red-50 rounded-lg">
+            <div className="flex items-center gap-3 px-4 py-3 mb-6 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50/90 dark:bg-red-900/20 backdrop-blur-sm rounded-xl border border-red-200 dark:border-red-800/50 animate-fade-in">
               <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
@@ -142,11 +145,11 @@ export function PhotoUpload({ onClose }: PhotoUploadProps) {
             onDrop={handleDrop}
             onClick={!uploading ? handleClick : undefined}
             className={`
-              relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200
+              relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 group
               ${uploading ? 'cursor-not-allowed' : 'cursor-pointer'}
               ${dragActive
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                ? 'border-primary-500 bg-gradient-to-br from-primary-50 to-purple-50 dark:from-primary-900/30 dark:to-purple-900/20 shadow-lg scale-105'
+                : 'border-gray-300 dark:border-white/10 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-gray-50/50 dark:hover:bg-dark-bg-tertiary/30'
               }
             `}
           >
@@ -161,34 +164,39 @@ export function PhotoUpload({ onClose }: PhotoUploadProps) {
             />
 
             {uploading ? (
-              <div className="space-y-4">
-                <div className="w-16 h-16 mx-auto border-4 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
-                <div>
-                  <p className="text-lg font-semibold text-gray-900">
-                    Uploading {completedFiles} of {totalFiles}...
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">{uploadProgress}% complete</p>
+              <div className="space-y-6">
+                <div className="relative">
+                  <div className="w-20 h-20 mx-auto border-4 border-gray-200 dark:border-white/10 border-t-primary-600 dark:border-t-primary-500 rounded-full animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">{uploadProgress}%</span>
+                  </div>
                 </div>
-                <div className="w-48 h-2 mx-auto bg-gray-200 rounded-full overflow-hidden">
+                <div>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-dark-text-primary">
+                    Uploading {completedFiles} of {totalFiles}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-dark-text-secondary mt-2">Please wait while we upload your photos</p>
+                </div>
+                <div className="w-full h-3 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden shadow-inner">
                   <div
-                    className="h-full bg-primary-600 transition-all duration-300"
+                    className="h-full bg-gradient-to-r from-primary-600 to-purple-600 dark:from-primary-600 dark:to-purple-700 transition-all duration-500 ease-out"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             ) : (
               <>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary-100 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-100 to-purple-100 dark:from-dark-bg-tertiary dark:to-dark-border-default flex items-center justify-center transition-all duration-300 ${dragActive ? 'scale-110 rotate-3' : 'group-hover:scale-105 group-hover:-rotate-3'}`}>
+                  <svg className="w-10 h-10 text-primary-600 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                       d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-text-primary">
                   {dragActive ? 'Drop your photos here' : 'Drag and drop photos'}
                 </h3>
-                <p className="text-sm text-gray-500 mt-2 mb-4">
+                <p className="text-gray-500 dark:text-dark-text-secondary mt-3 mb-6">
                   or click to browse from your computer
                 </p>
                 <button
@@ -197,11 +205,11 @@ export function PhotoUpload({ onClose }: PhotoUploadProps) {
                     e.stopPropagation()
                     handleClick()
                   }}
-                  className="btn-primary"
+                  className="btn-primary-lg shadow-lg dark:shadow-primary-600/30"
                 >
                   Choose Files
                 </button>
-                <p className="text-xs text-gray-400 mt-4">
+                <p className="text-xs text-gray-400 dark:text-dark-text-tertiary mt-6">
                   Supports JPEG, PNG, GIF, WebP (max 50MB each)
                 </p>
               </>

@@ -38,12 +38,12 @@ export default function PhotoGallery() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-[1800px] mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Photos</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">Photos</h1>
         {data?.pages[0] && (
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-600 dark:text-dark-text-secondary mt-2 text-lg">
             {data.pages[0].totalCount} {data.pages[0].totalCount === 1 ? 'photo' : 'photos'}
           </p>
         )}
@@ -51,10 +51,10 @@ export default function PhotoGallery() {
 
       {/* Loading state */}
       {isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex items-center gap-3 text-gray-500">
-            <div className="w-6 h-6 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin" />
-            <span>Loading your photos...</span>
+        <div className="flex items-center justify-center py-32">
+          <div className="flex flex-col items-center gap-4 text-gray-600 dark:text-dark-text-secondary">
+            <div className="w-12 h-12 border-3 border-gray-300 border-t-primary-600 dark:border-t-primary-500 rounded-full animate-spin" />
+            <span className="text-lg font-medium">Loading your photos...</span>
           </div>
         </div>
       )}

@@ -1,9 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5149/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true, // Include cookies in requests
 });
 
 // Request interceptor to add auth token
@@ -24,23 +25,23 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken,
-          });
+      try {
+        // Refresh token is now in httpOnly cookie, no need to send it in body
+        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
+          withCredentials: true,
+        });
 
-          localStorage.setItem('accessToken', data.accessToken);
-          localStorage.setItem('refreshToken', data.refreshToken);
+        // Store new access token (refresh token handled by httpOnly cookie)
+        localStorage.setItem('accessToken', data.accessToken);
 
-          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-          return api(originalRequest);
-        } catch (refreshError) {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
-        }
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Clear access token and redirect to login
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken'); // Clear old refresh token from localStorage
+        window.location.href = '/login';
       }
     }
 
