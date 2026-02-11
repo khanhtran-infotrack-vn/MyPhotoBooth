@@ -1,14 +1,23 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PhotoGrid } from '../../components/photos/PhotoGrid'
+import { SelectionToggleButton } from '../../components/photos'
 import { Lightbox } from '../../components/lightbox'
+import { BulkActionsBar } from '../../components/bulk'
 import { useTagPhotos, getAllTagPhotosFromPages, useTagsWithCount } from '../../hooks/useTags'
+import { SelectionContextProvider } from '../../contexts/SelectionContext'
+import { useSelectionStore } from '../../stores/selectionStore'
 import type { Photo } from '../../types'
 
-export default function TagPhotos() {
- const { id: tagId } = useParams<{ id: string }>()
+interface TagPhotosContentProps {
+ tagId: string
+}
+
+function TagPhotosContent({ tagId }: TagPhotosContentProps) {
  const [lightboxOpen, setLightboxOpen] = useState(false)
  const [lightboxIndex, setLightboxIndex] = useState(0)
+
+ const { setContext } = useSelectionStore()
 
  const {
    data: tagPhotosData,
@@ -19,6 +28,11 @@ export default function TagPhotos() {
  } = useTagPhotos(tagId ?? '', 50)
 
  const { data: tags = [] } = useTagsWithCount()
+
+ // Update selection context for tag view
+ useEffect(() => {
+  setContext({ view: 'tags', entityId: tagId })
+ }, [tagId, setContext])
 
  // Find the current tag from the tags list
  const currentTag = useMemo(
@@ -74,12 +88,15 @@ export default function TagPhotos() {
    <div className="p-6">
      {/* Header */}
      <div className="mb-6">
-       <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-         <Link to="/tags" className="hover:text-primary-600">Tags</Link>
-         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-         </svg>
-         <span className="text-gray-700">{currentTag?.name || 'Tag Photos'}</span>
+       <div className="flex items-center justify-between">
+         <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+           <Link to="/tags" className="hover:text-primary-600">Tags</Link>
+           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+           </svg>
+           <span className="text-gray-700">{currentTag?.name || 'Tag Photos'}</span>
+         </div>
+         <SelectionToggleButton photoCount={photos.length} />
        </div>
        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
          {currentTag?.name || 'Tag Photos'}
@@ -118,6 +135,9 @@ export default function TagPhotos() {
        />
      )}
 
+     {/* Bulk Actions Bar */}
+     {useSelectionStore.getState().isSelectionMode && <BulkActionsBar />}
+
      {/* Lightbox */}
      {lightboxOpen && (
        <Lightbox
@@ -127,5 +147,29 @@ export default function TagPhotos() {
        />
      )}
    </div>
+ )
+}
+
+// Wrapper component that provides SelectionContext
+export default function TagPhotos() {
+ const { id: tagId } = useParams<{ id: string }>()
+
+ if (!tagId) {
+   return (
+     <div className="p-6">
+       <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+         <h3 className="text-xl font-semibold text-gray-700">Invalid tag ID</h3>
+         <Link to="/tags" className="btn-secondary mt-4">
+           Back to Tags
+         </Link>
+       </div>
+     </div>
+   )
+ }
+
+ return (
+  <SelectionContextProvider context={{ view: 'tags', entityId: tagId }}>
+   <TagPhotosContent tagId={tagId} />
+  </SelectionContextProvider>
  )
 }

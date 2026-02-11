@@ -23,7 +23,7 @@ export function PhotoGrid({
   isLoading,
 }: PhotoGridProps) {
   const loadMoreRef = useRef<HTMLDivElement>(null)
-  const { isSelectionMode, selectedIds, toggleSelection, selectMultiple, enterSelectionMode } = useSelectionStore()
+  const { isSelectionMode, selectedIds, toggleSelection, selectMultiple, enterSelectionMode, exitSelectionMode, clearSelection } = useSelectionStore()
   const [hoveredPhotoId, setHoveredPhotoId] = useState<string | null>(null)
 
   // Track checkbox animations
@@ -33,6 +33,7 @@ export function PhotoGrid({
   const [isDragging, setIsDragging] = useState(false)
   const [dragStartPhotoId, setDragStartPhotoId] = useState<string | null>(null)
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null)
+  const hasMovedDuringDragRef = useRef(false)
 
   // Long press state
   const [longPressPhotoId, setLongPressPhotoId] = useState<string | null>(null)
@@ -79,6 +80,32 @@ export function PhotoGrid({
     }
   }, [])
 
+  // Keyboard shortcuts for selection mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ESC to exit selection mode
+      if (e.key === 'Escape' && isSelectionMode) {
+        e.preventDefault()
+        exitSelectionMode()
+      }
+
+      // Cmd/Ctrl + A to select all visible photos
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a' && isSelectionMode) {
+        e.preventDefault()
+        selectMultiple(photos.map(p => p.id))
+      }
+
+      // Cmd/Ctrl + D to deselect all (stay in selection mode)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd' && isSelectionMode) {
+        e.preventDefault()
+        clearSelection() // Clear selections but stay in mode
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSelectionMode, photos, selectMultiple, exitSelectionMode, clearSelection])
+
   // Handle photo click
   const handlePhotoClick = useCallback(
     (photo: Photo, index: number) => {
@@ -96,18 +123,21 @@ export function PhotoGrid({
     setIsDragging(true)
     setDragStartPhotoId(photoId)
     dragStartPosRef.current = { x: clientX, y: clientY }
-
-    // Enter selection mode if not already
-    if (!isSelectionMode) {
-      enterSelectionMode()
-      // Initially select just this photo
-      toggleSelection(photoId)
-    }
-  }, [isSelectionMode, enterSelectionMode, toggleSelection])
+    hasMovedDuringDragRef.current = false // Reset movement flag
+  }, [])
 
   // Handle drag move
   const handleDragMove = useCallback((photoId: string) => {
     if (!isDragging || !dragStartPhotoId) return
+
+    // Mark that we've moved during this drag
+    hasMovedDuringDragRef.current = true
+
+    // Enter selection mode on first move if not already
+    if (!isSelectionMode) {
+      enterSelectionMode()
+      toggleSelection(dragStartPhotoId)
+    }
 
     // Calculate range selection
     const startIndex = photoIdToIndexMap.get(dragStartPhotoId)
@@ -126,13 +156,15 @@ export function PhotoGrid({
       }
       selectMultiple(photoIdsToSelect)
     }
-  }, [isDragging, dragStartPhotoId, photoIdToIndexMap, photos, selectMultiple])
+  }, [isDragging, dragStartPhotoId, photoIdToIndexMap, photos, selectMultiple, isSelectionMode, enterSelectionMode, toggleSelection])
 
   // Handle drag end
   const handleDragEnd = useCallback(() => {
     setIsDragging(false)
     setDragStartPhotoId(null)
     dragStartPosRef.current = null
+    // Note: We don't reset hasMovedDuringDragRef here because the click handler needs to check it
+    // It will be effectively reset on the next drag start
   }, [])
 
   // Handle long press start
@@ -201,19 +233,32 @@ export function PhotoGrid({
                   const isFavorite = originalPhoto?.isFavorite || false
 
                   const handleClick = (e: React.MouseEvent) => {
+                    // If we're in selection mode, toggle selection
                     if (isSelectionMode) {
                       toggleSelection(originalPhoto.id)
-                    } else {
-                      onClick?.(e)
+                      return
                     }
+
+                    // If we just finished a drag (mouse moved), don't trigger click
+                    if (hasMovedDuringDragRef.current) {
+                      hasMovedDuringDragRef.current = false // Reset after checking
+                      return
+                    }
+
+                    // Otherwise, it's a regular click - open lightbox
+                    onClick?.(e)
                   }
 
                   return (
                     <div
-                      className={`relative group cursor-pointer overflow-hidden rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 ease-out ${
+                      className={`relative group cursor-pointer overflow-hidden rounded-xl shadow-sm transition-all duration-300 ease-out ${
                         isLongPressed ? 'scale-95' : ''
                       } ${
-                        isHovered ? '-translate-y-1' : 'translate-y-0'
+                        // Only lift in selection mode
+                        isSelectionMode && isHovered ? '-translate-y-1' : 'translate-y-0'
+                      } ${
+                        // Shadow boost only in selection mode, minimal shadow otherwise
+                        isSelectionMode && isHovered ? 'shadow-xl' : isHovered ? 'shadow-md' : 'shadow-sm'
                       }`}
                       style={{
                         width,
@@ -272,21 +317,24 @@ export function PhotoGrid({
                         alt={originalPhoto?.originalFileName || 'Photo'}
                         loading="lazy"
                         className={`w-full h-full object-cover ${
-                          isHovered
+                          // Only scale in selection mode
+                          isSelectionMode && isHovered
                             ? 'scale-105 transition-transform duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)'
                             : 'scale-100 transition-transform duration-700 cubic-bezier(0.4, 0, 0.2, 1)'
                         }`}
                         style={{ width, height, objectFit: 'cover' } as React.CSSProperties}
                       />
 
-                      {/* Gradient overlay on hover - enhanced transition */}
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent ${
-                          isHovered
-                            ? 'opacity-100 transition-opacity duration-500 ease-out'
-                            : 'opacity-0 transition-opacity duration-300 ease-in'
-                        }`}
-                      />
+                      {/* Gradient overlay - only in selection mode */}
+                      {isSelectionMode && (
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent ${
+                            isHovered
+                              ? 'opacity-100 transition-opacity duration-500 ease-out'
+                              : 'opacity-0 transition-opacity duration-300 ease-in'
+                          }`}
+                        />
+                      )}
 
                       {/* Long press ripple effect */}
                       {isLongPressed && (
@@ -304,14 +352,15 @@ export function PhotoGrid({
                         </div>
                       )}
 
-                      {/* Selection checkbox - enhanced with premium transitions */}
-                      <div
-                        className={`absolute top-3 left-3 z-10 ${
-                          isSelected || isHovered
-                            ? 'opacity-100 scale-100'
-                            : 'opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100'
-                        } transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1)`}
-                      >
+                      {/* Selection checkbox - only show in selection mode, or when selected */}
+                      {(isSelectionMode || isSelected) && (
+                        <div
+                          className={`absolute top-3 left-3 z-10 ${
+                            isSelected || (isSelectionMode && isHovered)
+                              ? 'opacity-100 scale-100'
+                              : 'opacity-0 scale-90'
+                          } transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1)`}
+                        >
                         <button
                           onClick={(e) => {
                             e.preventDefault()
@@ -379,41 +428,46 @@ export function PhotoGrid({
                           )}
                         </button>
                       </div>
+                      )}
 
-                      {/* Photo info overlay on hover - enhanced transition */}
-                      <div
-                        className={`absolute bottom-0 left-0 right-0 p-3 text-white ${
-                          isHovered
-                            ? 'opacity-100 translate-y-0 transition-all duration-300 ease-out'
-                            : 'opacity-0 translate-y-2 transition-all duration-200 ease-in'
-                        }`}
-                        style={{
-                          transitionTimingFunction: isHovered
-                            ? 'cubic-bezier(0.34, 1.56, 0.64, 1)'
-                            : 'cubic-bezier(0.4, 0, 1, 1)',
-                        }}
-                      >
-                        <p className="text-sm font-medium truncate drop-shadow-lg">
-                          {originalPhoto?.originalFileName}
-                        </p>
-                      </div>
+                      {/* Photo info overlay - only in selection mode */}
+                      {isSelectionMode && (
+                        <div
+                          className={`absolute bottom-0 left-0 right-0 p-3 text-white ${
+                            isHovered
+                              ? 'opacity-100 translate-y-0 transition-all duration-300 ease-out'
+                              : 'opacity-0 translate-y-2 transition-all duration-200 ease-in'
+                          }`}
+                          style={{
+                            transitionTimingFunction: isHovered
+                              ? 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+                              : 'cubic-bezier(0.4, 0, 1, 1)',
+                          }}
+                        >
+                          <p className="text-sm font-medium truncate drop-shadow-lg">
+                            {originalPhoto?.originalFileName}
+                          </p>
+                        </div>
+                      )}
 
-                      {/* Shine effect on hover - enhanced with smooth animation */}
-                      <div
-                        className={`absolute inset-0 pointer-events-none ${
-                          isHovered
-                            ? 'opacity-100 transition-opacity duration-300 ease-out'
-                            : 'opacity-0 transition-opacity duration-500 ease-in'
-                        }`}
-                        style={{
-                          background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 45%, rgba(255,255,255,0.25) 50%, transparent 55%)',
-                          backgroundSize: '200% 100%',
-                          backgroundPosition: isHovered ? '100% 0' : '-100% 0',
-                          transition: isHovered
-                            ? 'background-position 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out'
-                            : 'background-position 0s linear, opacity 0.5s ease-in',
-                        }}
-                      />
+                      {/* Shine effect - only in selection mode */}
+                      {isSelectionMode && (
+                        <div
+                          className={`absolute inset-0 pointer-events-none ${
+                            isHovered
+                              ? 'opacity-100 transition-opacity duration-300 ease-out'
+                              : 'opacity-0 transition-opacity duration-500 ease-in'
+                          }`}
+                          style={{
+                            background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 45%, rgba(255,255,255,0.25) 50%, transparent 55%)',
+                            backgroundSize: '200% 100%',
+                            backgroundPosition: isHovered ? '100% 0' : '-100% 0',
+                            transition: isHovered
+                              ? 'background-position 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out'
+                              : 'background-position 0s linear, opacity 0.5s ease-in',
+                          }}
+                        />
+                      )}
                     </div>
                   )
                 },

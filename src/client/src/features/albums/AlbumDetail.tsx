@@ -1,14 +1,20 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAlbum, useDeleteAlbum } from '../../hooks/useAlbums'
-import { PhotoGrid } from '../../components/photos'
+import { PhotoGrid, SelectionToggleButton } from '../../components/photos'
 import { Lightbox } from '../../components/lightbox'
 import { Slideshow } from '../../components/slideshow'
 import { ShareModal } from '../sharing/ShareModal'
+import { SelectionContextProvider } from '../../contexts/SelectionContext'
+import { useSelectionStore } from '../../stores/selectionStore'
+import { BulkActionsBar } from '../../components/bulk'
 import type { Photo } from '../../types'
 
-export default function AlbumDetail() {
- const { id } = useParams<{ id: string }>()
+interface AlbumDetailContentProps {
+ albumId: string
+}
+
+function AlbumDetailContent({ albumId }: AlbumDetailContentProps) {
  const navigate = useNavigate()
  const [lightboxOpen, setLightboxOpen] = useState(false)
  const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -16,9 +22,16 @@ export default function AlbumDetail() {
  const [slideshowIndex, setSlideshowIndex] = useState(0)
  const [showShareAlbum, setShowShareAlbum] = useState(false)
  const [sharePhoto, setSharePhoto] = useState<Photo | null>(null)
+ const [showAlbumSelect, setShowAlbumSelect] = useState(false)
 
- const { data: album, isLoading } = useAlbum(id ?? null)
+ const { setContext, isSelectionMode } = useSelectionStore()
+ const { data: album, isLoading } = useAlbum(albumId ?? null)
  const deleteAlbum = useDeleteAlbum()
+
+ // Update selection context for album view
+ useEffect(() => {
+  setContext({ view: 'album', entityId: albumId })
+ }, [albumId, setContext])
 
  const photos = useMemo(() => album?.photos || [], [album?.photos])
 
@@ -87,6 +100,7 @@ export default function AlbumDetail() {
      </div>
 
      <div className="flex items-center gap-2">
+      <SelectionToggleButton photoCount={photos.length} />
       <button
        onClick={() => setShowShareAlbum(true)}
        className="btn-ghost text-primary-600 hover:bg-primary-50"
@@ -131,6 +145,25 @@ export default function AlbumDetail() {
     />
    )}
 
+   {/* Bulk Actions Bar */}
+   {isSelectionMode && <BulkActionsBar />}
+
+   {/* Album Select Modal */}
+   {showAlbumSelect && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+     <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+      <h3 className="text-xl font-bold text-gray-900 mb-4">Remove from Album</h3>
+      <p className="text-gray-600 mb-4">This feature is not yet implemented for album photos.</p>
+      <button
+       onClick={() => setShowAlbumSelect(false)}
+       className="mt-4 w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+      >
+       Cancel
+      </button>
+     </div>
+    </div>
+   )}
+
    {/* Lightbox */}
    {lightboxOpen && photos.length > 0 && (
     <Lightbox
@@ -172,5 +205,29 @@ export default function AlbumDetail() {
     />
    )}
   </div>
+ )
+}
+
+// Wrapper component that provides SelectionContext
+export default function AlbumDetail() {
+ const { id } = useParams<{ id: string }>()
+
+ if (!id) {
+  return (
+   <div className="p-6">
+    <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+     <h3 className="text-xl font-semibold text-gray-700">Invalid album ID</h3>
+     <Link to="/albums" className="btn-secondary mt-4">
+      Back to Albums
+     </Link>
+    </div>
+   </div>
+  )
+ }
+
+ return (
+  <SelectionContextProvider context={{ view: 'album', entityId: id }}>
+   <AlbumDetailContent albumId={id} />
+  </SelectionContextProvider>
  )
 }

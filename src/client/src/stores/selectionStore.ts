@@ -7,17 +7,41 @@ interface LastSelection {
   timestamp: number
 }
 
+export interface SelectionContext {
+  view: 'gallery' | 'album' | 'tags' | 'shared'
+  filter?: 'all' | 'favorites' | 'recent' | 'search'
+  entityId?: string // album ID, tag ID, etc.
+}
+
 interface SelectionState {
+  // Current selection
   isSelectionMode: boolean
   selectedIds: Set<string>
+
+  // Context awareness
+  currentContext: SelectionContext | null
+  allowedContexts: Set<string>
+
+  // Undo (keep existing)
   lastSelection: LastSelection | null
+
+  // Actions
   enterSelectionMode: () => void
   exitSelectionMode: () => void
+  toggleSelectionMode: () => void
   toggleSelection: (id: string) => void
   selectMultiple: (ids: string[]) => void
   deselectMultiple: (ids: string[]) => void
   selectAll: (ids: string[]) => void
   clearSelection: () => void
+  clearAll: () => void // Combined clear + exit
+
+  // Context management
+  setContext: (context: SelectionContext) => void
+  clearContext: () => void
+  isSelectionAllowedInContext: (context: string) => boolean
+
+  // Undo
   saveLastAction: (action: string) => void
   undoLastAction: () => { ids: string[]; canUndo: boolean }
   canUndo: () => boolean
@@ -35,11 +59,20 @@ function arrayToSet<T>(arr: T[]): Set<T> {
   return new Set(arr)
 }
 
+// Generate a context key for comparison
+function getContextKey(context: SelectionContext | null): string {
+  if (!context) return 'none'
+  const { view, filter, entityId } = context
+  return `${view}:${filter || 'none'}:${entityId || 'none'}`
+}
+
 export const useSelectionStore = create<SelectionState>()(
   persist(
     (set, get) => ({
       isSelectionMode: false,
       selectedIds: new Set(),
+      currentContext: null,
+      allowedContexts: new Set(['gallery', 'album', 'tags']), // Enable selection in all views
       lastSelection: null,
 
       enterSelectionMode: () => set({ isSelectionMode: true }),
@@ -47,21 +80,32 @@ export const useSelectionStore = create<SelectionState>()(
       exitSelectionMode: () =>
         set({
           isSelectionMode: false,
-          selectedIds: new Set(),
+          // Keep selectedIds - don't clear on exit
         }),
+
+      toggleSelectionMode: () =>
+        set((state) => ({
+          isSelectionMode: !state.isSelectionMode,
+          // Clear selections when exiting selection mode
+          selectedIds: state.isSelectionMode ? new Set() : state.selectedIds,
+        })),
 
       toggleSelection: (id) =>
         set((state) => {
+          // Only allow selection if in selection mode
+          if (!state.isSelectionMode) {
+            return state
+          }
+
           const newSet = new Set(state.selectedIds)
           if (newSet.has(id)) {
             newSet.delete(id)
           } else {
             newSet.add(id)
           }
-          // Set selection mode to true when any item is selected, false when empty
+          // Don't auto-enter or auto-exit selection mode
           return {
             selectedIds: newSet,
-            isSelectionMode: newSet.size > 0,
           }
         }),
 
@@ -76,8 +120,8 @@ export const useSelectionStore = create<SelectionState>()(
         set((state) => {
           const newSet = new Set(state.selectedIds)
           ids.forEach((id) => newSet.delete(id))
-          // Exit selection mode if no items remain selected
-          return { selectedIds: newSet, isSelectionMode: newSet.size > 0 }
+          // Don't auto-exit selection mode - stay in mode
+          return { selectedIds: newSet }
         }),
 
       selectAll: (ids) =>
@@ -89,16 +133,54 @@ export const useSelectionStore = create<SelectionState>()(
       clearSelection: () =>
         set({
           selectedIds: new Set(),
+          // Don't exit selection mode - stay in mode
+        }),
+
+      clearAll: () =>
+        set({
+          selectedIds: new Set(),
           isSelectionMode: false,
         }),
+
+      setContext: (context) =>
+        set((state) => {
+          const newContextKey = getContextKey(context)
+          const oldContextKey = getContextKey(state.currentContext)
+
+          // If context changed, clear selection and exit mode
+          if (newContextKey !== oldContextKey) {
+            return {
+              currentContext: context,
+              selectedIds: new Set(),
+              isSelectionMode: false,
+            }
+          }
+
+          // Same context, just update
+          return {
+            currentContext: context,
+          }
+        }),
+
+      clearContext: () =>
+        set({
+          currentContext: null,
+          selectedIds: new Set(),
+          isSelectionMode: false,
+        }),
+
+      isSelectionAllowedInContext: (context) => {
+        const state = get()
+        return state.allowedContexts.has(context)
+      },
 
       saveLastAction: (action) =>
         set((state) => ({
           lastSelection: {
             ids: setToArray(state.selectedIds),
             action,
-            timestamp: Date.now()
-          }
+            timestamp: Date.now(),
+          },
         })),
 
       undoLastAction: () => {
@@ -119,7 +201,7 @@ export const useSelectionStore = create<SelectionState>()(
         set({
           selectedIds: arrayToSet(last.ids),
           isSelectionMode: last.ids.length > 0,
-          lastSelection: null
+          lastSelection: null,
         })
 
         return { ids: last.ids, canUndo: true }
@@ -131,12 +213,13 @@ export const useSelectionStore = create<SelectionState>()(
 
         const now = Date.now()
         return now - state.lastSelection.timestamp <= UNDO_DURATION
-      }
+      },
     }),
     {
       name: 'photo-selection-storage',
       partialize: (state) => ({
-        lastSelection: state.lastSelection
+        lastSelection: state.lastSelection,
+        // Don't persist isSelectionMode or selectedIds - should not survive refresh
       }),
       // Custom storage to handle Set serialization
       storage: {
@@ -156,8 +239,8 @@ export const useSelectionStore = create<SelectionState>()(
         },
         removeItem: (name) => {
           localStorage.removeItem(name)
-        }
-      }
+        },
+      },
     }
   )
 )

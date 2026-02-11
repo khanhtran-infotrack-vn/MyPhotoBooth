@@ -33,7 +33,22 @@ export function LightboxInfo({ photo, details, onClose }: LightboxInfoProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
-  const parseExifData = (exifJson: string | null): Record<string, string> => {
+  interface RationalNumber {
+    Numerator: number
+    Denominator: number
+  }
+
+  const formatExifValue = (value: any): string => {
+    if (typeof value === 'object' && value !== null && 'Numerator' in value && 'Denominator' in value) {
+      const rational = value as RationalNumber
+      return rational.Denominator === 1
+        ? rational.Numerator.toString()
+        : `${rational.Numerator}/${rational.Denominator}`
+    }
+    return String(value)
+  }
+
+  const parseExifData = (exifJson: string | null): Record<string, any> => {
     if (!exifJson) return {}
     try {
       return JSON.parse(exifJson)
@@ -63,7 +78,7 @@ export function LightboxInfo({ photo, details, onClose }: LightboxInfoProps) {
   return (
     <div
       className="absolute top-0 right-0 bottom-0 w-80 bg-gray-900/95 backdrop-blur-sm z-30
-           border-l border-white/10 animate-slide-in overflow-y-auto"
+           border-l border-white/10 animate-slide-in-right-panel overflow-y-auto"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header */}
@@ -149,10 +164,10 @@ export function LightboxInfo({ photo, details, onClose }: LightboxInfoProps) {
             </h4>
             <div className="space-y-2">
               {exif.Make && <InfoRow label="Camera" value={`${exif.Make} ${exif.Model || ''}`} />}
-              {exif.FocalLength && <InfoRow label="Focal length" value={exif.FocalLength} />}
-              {exif.FNumber && <InfoRow label="Aperture" value={`f/${exif.FNumber}`} />}
-              {exif.ExposureTime && <InfoRow label="Shutter speed" value={exif.ExposureTime} />}
-              {exif.ISO && <InfoRow label="ISO" value={exif.ISO} />}
+              {exif.FocalLength && <InfoRow label="Focal length" value={formatExifValue(exif.FocalLength)} />}
+              {exif.FNumber && <InfoRow label="Aperture" value={`f/${formatExifValue(exif.FNumber)}`} />}
+              {exif.ExposureTime && <InfoRow label="Shutter speed" value={formatExifValue(exif.ExposureTime)} />}
+              {exif.ISO && <InfoRow label="ISO" value={formatExifValue(exif.ISO)} />}
             </div>
           </section>
         )}

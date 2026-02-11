@@ -792,6 +792,10 @@
     animation: slideInRight var(--duration-normal) var(--ease-out);
   }
 
+  .animate-slide-in-right-panel {
+    animation: slideInRightPanel var(--duration-normal) var(--ease-out);
+  }
+
   .animate-scale-in {
     animation: scaleIn var(--duration-fast) var(--ease-out);
   }
@@ -870,6 +874,17 @@
     from {
       opacity: 0;
       transform: translateX(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRightPanel {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
     }
     to {
       opacity: 1;

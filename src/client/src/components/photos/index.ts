@@ -1,4 +1,5 @@
 export { PhotoGrid } from './PhotoGrid'
 export { DateGroupHeader } from './DateGroupHeader'
 export { SelectionBar } from './SelectionBar'
+export { SelectionToggleButton } from './SelectionToggleButton'
 export { AuthenticatedImage } from './AuthenticatedImage'

@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { PhotoGrid, SelectionBar } from '../../components/photos'
+import { useState, useMemo, useEffect } from 'react'
+import { PhotoGrid, SelectionToggleButton } from '../../components/photos'
 import { Lightbox } from '../../components/lightbox'
 import { BulkActionsBar } from '../../components/bulk'
 import { Slideshow } from '../../components/slideshow'
@@ -10,12 +10,17 @@ import { useAlbums } from '../../hooks/useAlbums'
 import { ShareModal } from '../sharing/ShareModal'
 import { useSelectionStore } from '../../stores/selectionStore'
 import { useBulkOperations } from '../../hooks/useBulkOperations'
+import { SelectionContextProvider } from '../../contexts/SelectionContext'
 import type { Photo } from '../../types'
 
 type FilterType = 'all' | 'favorites' | 'recent' | 'search'
 
-export default function PhotoGallery() {
- const [filterType, setFilterType] = useState<FilterType>('all')
+interface PhotoGalleryContentProps {
+ filterType: FilterType
+ setFilterType: (filter: FilterType) => void
+}
+
+function PhotoGalleryContent({ filterType, setFilterType }: PhotoGalleryContentProps) {
  const [lightboxOpen, setLightboxOpen] = useState(false)
  const [lightboxIndex, setLightboxIndex] = useState(0)
  const [slideshowOpen, setSlideshowOpen] = useState(false)
@@ -24,8 +29,13 @@ export default function PhotoGallery() {
  const [searchQuery, setSearchQuery] = useState('')
  const [showAlbumSelect, setShowAlbumSelect] = useState(false)
 
- const { isSelectionMode, clearSelection } = useSelectionStore()
+ const { isSelectionMode, clearSelection, setContext } = useSelectionStore()
  const { bulkAddToAlbum } = useBulkOperations()
+
+ // Update selection context when filter changes
+ useEffect(() => {
+  setContext({ view: 'gallery', filter: filterType })
+ }, [filterType, setContext])
 
  // All photos query
  const {
@@ -135,6 +145,7 @@ export default function PhotoGallery() {
  const handleFilterChange = (newFilter: FilterType) => {
   setFilterType(newFilter)
   setSearchQuery('') // Clear search when changing filters
+  // Context will be updated via useEffect
  }
 
  const handleSearchChange = (value: string) => {
@@ -207,6 +218,7 @@ export default function PhotoGallery() {
       {/* Toolbar with Search and Slideshow */}
       <div className="flex items-center gap-3">
        <SlideshowButton />
+       <SelectionToggleButton photoCount={photos.length} />
        <div className="w-full sm:w-72 lg:w-80">
         <div className="relative">
          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -364,9 +376,6 @@ export default function PhotoGallery() {
    {/* Bulk Actions Bar */}
    {isSelectionMode && <BulkActionsBar onOpenAlbumSelect={() => setShowAlbumSelect(true)} />}
 
-   {/* Selection bar */}
-   <SelectionBar />
-
    {/* Album Select Modal */}
    {showAlbumSelect && (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -431,5 +440,16 @@ export default function PhotoGallery() {
    )}
    </div>
   </div>
+ )
+}
+
+// Wrapper component that provides SelectionContext
+export default function PhotoGallery() {
+ const [filterType, setFilterType] = useState<FilterType>('all')
+
+ return (
+  <SelectionContextProvider context={{ view: 'gallery', filter: filterType }}>
+   <PhotoGalleryContent filterType={filterType} setFilterType={setFilterType} />
+  </SelectionContextProvider>
  )
 }
