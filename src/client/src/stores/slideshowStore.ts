@@ -15,8 +15,6 @@ interface SlideshowStore {
   setCurrentIndex: (index: number) => void
   setIsFullscreen: (fullscreen: boolean) => void
   setShowControls: (show: boolean) => void
-  nextSlide: () => void
-  prevSlide: () => void
 }
 
 export const useSlideshowStore = create<SlideshowStore>()(
@@ -44,17 +42,7 @@ export const useSlideshowStore = create<SlideshowStore>()(
 
       setIsFullscreen: (fullscreen) => set({ isFullscreen: fullscreen }),
 
-      setShowControls: (show) => set({ showControls: show }),
-
-      nextSlide: () =>
-        set((state) => ({
-          currentIndex: state.currentIndex + 1
-        })),
-
-      prevSlide: () =>
-        set((state) => ({
-          currentIndex: Math.max(0, state.currentIndex - 1)
-        }))
+      setShowControls: (show) => set({ showControls: show })
     }),
     {
       name: 'slideshow-config-storage',

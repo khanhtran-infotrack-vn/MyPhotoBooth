@@ -7,6 +7,9 @@ interface SlideshowControlsProps {
   onFullscreen: () => void
   onSettings: () => void
   onClose: () => void
+  onInteraction?: () => void
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
 }
 
 export function SlideshowControls({
@@ -17,12 +20,25 @@ export function SlideshowControls({
   onNext,
   onFullscreen,
   onSettings,
-  onClose
+  onClose,
+  onInteraction,
+  onMouseEnter,
+  onMouseLeave
 }: SlideshowControlsProps) {
+  const handleInteraction = (handler: () => void) => (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onInteraction?.()
+    handler()
+  }
+
   return (
-    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black/50 backdrop-blur-md rounded-full px-6 py-3">
+    <div
+      className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black/50 backdrop-blur-md rounded-full px-6 py-3"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <button
-        onClick={onPrevious}
+        onClick={handleInteraction(onPrevious)}
         className="p-2 text-white hover:text-primary-400 transition-colors"
         title="Previous (Left Arrow)"
       >
@@ -32,7 +48,7 @@ export function SlideshowControls({
       </button>
 
       <button
-        onClick={onPlayPause}
+        onClick={handleInteraction(onPlayPause)}
         className="p-3 bg-white text-black rounded-full hover:bg-gray-200 transition-colors"
         title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
       >
@@ -48,7 +64,7 @@ export function SlideshowControls({
       </button>
 
       <button
-        onClick={onNext}
+        onClick={handleInteraction(onNext)}
         className="p-2 text-white hover:text-primary-400 transition-colors"
         title="Next (Right Arrow)"
       >
@@ -60,7 +76,7 @@ export function SlideshowControls({
       <div className="w-px h-8 bg-white/30 mx-2" />
 
       <button
-        onClick={onFullscreen}
+        onClick={handleInteraction(onFullscreen)}
         className="p-2 text-white hover:text-primary-400 transition-colors"
         title={`Fullscreen (${isFullscreen ? 'Exit' : 'Enter'}) (F)`}
       >
@@ -76,7 +92,7 @@ export function SlideshowControls({
       </button>
 
       <button
-        onClick={onSettings}
+        onClick={handleInteraction(onSettings)}
         className="p-2 text-white hover:text-primary-400 transition-colors"
         title="Settings (S)"
       >
@@ -87,7 +103,7 @@ export function SlideshowControls({
       </button>
 
       <button
-        onClick={onClose}
+        onClick={handleInteraction(onClose)}
         className="p-2 text-white hover:text-red-400 transition-colors ml-2"
         title="Close (Escape)"
       >

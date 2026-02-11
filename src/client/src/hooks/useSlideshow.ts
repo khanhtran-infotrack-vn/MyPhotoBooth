@@ -19,6 +19,12 @@ export function useSlideshow({ photos, onSlideChange, onEnd }: UseSlideshowOptio
 
   const intervalRef = useRef<number | null>(null)
   const shuffledIndicesRef = useRef<number[]>([])
+  const currentIndexRef = useRef(currentIndex)
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    currentIndexRef.current = currentIndex
+  }, [currentIndex])
 
   // Generate shuffled indices if shuffle is enabled
   const generateShuffledIndices = useCallback(() => {
@@ -56,7 +62,7 @@ export function useSlideshow({ photos, onSlideChange, onEnd }: UseSlideshowOptio
     }
 
     intervalRef.current = setInterval(() => {
-      const nextIndex = currentIndex + 1
+      const nextIndex = currentIndexRef.current + 1
 
       // Check if we've reached the end
       if (nextIndex >= photos.length) {
@@ -76,7 +82,7 @@ export function useSlideshow({ photos, onSlideChange, onEnd }: UseSlideshowOptio
         clearInterval(intervalRef.current)
       }
     }
-  }, [isPlaying, photos.length, config.timing, config.loop, setIsPlaying, onEnd, setCurrentIndex])
+  }, [isPlaying, currentIndex, photos.length, config.timing, config.loop, setIsPlaying, onEnd, setCurrentIndex])
 
   // Handle slide change
   useEffect(() => {

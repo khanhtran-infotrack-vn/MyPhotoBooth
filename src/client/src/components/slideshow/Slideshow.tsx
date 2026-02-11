@@ -34,6 +34,8 @@ export function Slideshow({ photos, initialIndex = 0, onClose, autoStart = true 
 
   const { isFullscreen, showControls, setIsFullscreen, setShowControls, setConfig } = useSlideshowStore()
   const [showSettings, setShowSettings] = useState(false)
+  const [lastInteraction, setLastInteraction] = useState<number>(Date.now())
+  const [isHoveringControls, setIsHoveringControls] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Set initial index
@@ -62,17 +64,34 @@ export function Slideshow({ photos, initialIndex = 0, onClose, autoStart = true 
 
   // Auto-hide controls
   useEffect(() => {
-    if (!isPlaying || showSettings) {
+    // Don't auto-hide when settings are open or hovering controls
+    if (showSettings || isHoveringControls) {
       setShowControls(true)
       return
     }
 
+    // Keep controls visible when paused or not playing
+    if (!isPlaying) {
+      setShowControls(true)
+      return
+    }
+
+    // Auto-hide after 3 seconds of inactivity
     const timer = setTimeout(() => {
-      setShowControls(false)
+      const timeSinceInteraction = Date.now() - lastInteraction
+      if (timeSinceInteraction >= 3000 && !isHoveringControls) {
+        setShowControls(false)
+      }
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, [isPlaying, showSettings, setShowControls])
+  }, [isPlaying, showSettings, isHoveringControls, lastInteraction, setShowControls])
+
+  // Interaction tracking callback
+  const handleInteraction = () => {
+    setLastInteraction(Date.now())
+    setShowControls(true)
+  }
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -96,7 +115,10 @@ export function Slideshow({ photos, initialIndex = 0, onClose, autoStart = true 
     <div
       ref={containerRef}
       className="fixed inset-0 bg-black z-50 flex items-center justify-center"
-      onClick={() => setShowControls(!showControls)}
+      onClick={() => {
+        handleInteraction()
+        setShowControls(!showControls)
+      }}
     >
       {/* Main photo display */}
       <div className="relative w-full h-full flex items-center justify-center">
@@ -143,6 +165,9 @@ export function Slideshow({ photos, initialIndex = 0, onClose, autoStart = true 
             onFullscreen={() => setIsFullscreen(!isFullscreen)}
             onSettings={() => setShowSettings(!showSettings)}
             onClose={onClose}
+            onInteraction={handleInteraction}
+            onMouseEnter={() => setIsHoveringControls(true)}
+            onMouseLeave={() => setIsHoveringControls(false)}
           />
 
           {showSettings && (
@@ -157,7 +182,7 @@ export function Slideshow({ photos, initialIndex = 0, onClose, autoStart = true 
 
       {/* Pause on hover */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         onMouseEnter={() => {
           if (isPlaying) setIsPlaying(false)
         }}
