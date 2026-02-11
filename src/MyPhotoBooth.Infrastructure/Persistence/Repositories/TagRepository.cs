@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyPhotoBooth.Application.Common.DTOs;
 using MyPhotoBooth.Application.Interfaces;
 using MyPhotoBooth.Domain.Entities;
 
@@ -15,7 +16,10 @@ public class TagRepository : ITagRepository
 
     public async Task<Tag?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.Tags.FindAsync(new object[] { id }, cancellationToken);
+        return await _context.Tags
+            .Include(t => t.PhotoTags)
+            .ThenInclude(pt => pt.Photo)
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
     public async Task<Tag?> GetByNameAsync(string name, string userId, CancellationToken cancellationToken = default)
@@ -38,6 +42,21 @@ public class TagRepository : ITagRepository
             .Where(t => t.UserId == userId && t.Name.Contains(query))
             .OrderBy(t => t.Name)
             .Take(10)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<TagWithPhotoCountResponse>> GetTagsWithPhotoCountAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Tags
+            .Where(t => t.UserId == userId)
+            .OrderBy(t => t.Name)
+            .Select(t => new TagWithPhotoCountResponse
+            {
+                Id = t.Id,
+                Name = t.Name,
+                CreatedAt = t.CreatedAt,
+                PhotoCount = t.PhotoTags.Count
+            })
             .ToListAsync(cancellationToken);
     }
 

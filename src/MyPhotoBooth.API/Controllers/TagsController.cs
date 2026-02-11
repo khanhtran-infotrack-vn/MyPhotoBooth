@@ -49,6 +49,17 @@ public class TagsController : ControllerBase
         return BadRequest(new { message = result.Error });
     }
 
+    [HttpGet("with-count")]
+    public async Task<IActionResult> GetTagsWithCount(CancellationToken cancellationToken)
+    {
+        var query = new GetTagsWithPhotoCountQuery(GetUserId());
+        var result = await _sender.Send(query, cancellationToken);
+
+        if (result.IsSuccess)
+            return Ok(result.Value);
+        return BadRequest(new { message = result.Error });
+    }
+
     [HttpGet("search")]
     public async Task<IActionResult> SearchTags([FromQuery] string query, CancellationToken cancellationToken)
     {
@@ -83,13 +94,31 @@ public class TagsController : ControllerBase
     }
 
     [HttpGet("{id}/photos")]
-    public async Task<IActionResult> GetTagPhotos(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTagPhotos(
+        Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
-        var query = new GetTagPhotosQuery(id, GetUserId());
+        var query = new GetTagPhotosQuery(id, GetUserId(), page, pageSize);
         var result = await _sender.Send(query, cancellationToken);
 
         if (result.IsSuccess)
             return Ok(result.Value);
+        return result.ToHttpResponse();
+    }
+
+    [HttpDelete("{tagId}/photos/{photoId}")]
+    public async Task<IActionResult> RemoveTagFromPhoto(
+        Guid tagId,
+        Guid photoId,
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveTagFromPhotoCommand(photoId, tagId, GetUserId());
+        var result = await _sender.Send(command, cancellationToken);
+
+        if (result.IsSuccess)
+            return NoContent();
         return result.ToHttpResponse();
     }
 }

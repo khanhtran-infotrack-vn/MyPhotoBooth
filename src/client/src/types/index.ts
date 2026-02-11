@@ -51,7 +51,7 @@ export interface AlbumWithCover extends Album {
 export interface Tag {
   id: string
   name: string
-  photoCount: number
+  photoCount?: number
 }
 
 // Share types

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
-import { useTags, useDeleteTag, type Tag } from '../../hooks/useTags'
+import { useTagsWithCount, useDeleteTag, type Tag } from '../../hooks/useTags'
 
 export default function TagList() {
- const { data: tags, isLoading } = useTags()
+ const { data: tags, isLoading } = useTagsWithCount()
  const deleteTag = useDeleteTag()
 
  const handleDelete = async (tag: Tag) => {
@@ -63,6 +63,9 @@ export default function TagList() {
          />
         </svg>
         <span className="font-medium">{tag.name}</span>
+        <span className="px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-full">
+         {tag.photoCount ?? 0}
+        </span>
        </Link>
        <button
         onClick={() => handleDelete(tag)}

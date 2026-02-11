@@ -119,6 +119,14 @@ public class PhotosController : ControllerBase
         return result.ToHttpResponse();
     }
 
+    [HttpDelete("{photoId}/tags/{tagId}")]
+    public async Task<IActionResult> RemoveTagFromPhoto(Guid photoId, Guid tagId, CancellationToken cancellationToken)
+    {
+        var command = new RemoveTagFromPhotoCommand(photoId, tagId, GetUserId());
+        var result = await _mediator.Send(command, cancellationToken);
+        return result.ToHttpResponse();
+    }
+
     [HttpGet("favorites")]
     public async Task<IActionResult> GetFavorites([FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default)
     {
